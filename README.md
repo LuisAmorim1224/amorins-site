@@ -1,1 +1,133 @@
-# amorins-site
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Amorins Contábil</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f9f9fb; color: #333; }
+    header { background: #1a3ba1; color: white; padding: 40px 20px; text-align: center; }
+    header img { width: 100px; margin-bottom: 15px; }
+    h1 { font-size: 2em; margin-bottom: 10px; }
+    p.sub { font-size: 1.1em; max-width: 800px; margin: auto; }
+
+    nav { background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 10px 20px; text-align: center; }
+    nav a { margin: 0 15px; text-decoration: none; color: #1a3ba1; font-weight: bold; }
+
+    .cta { margin-top: 25px; }
+    .cta a {
+      display: inline-block;
+      padding: 12px 20px;
+      margin: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .btn-red { background-color: #e53935; color: white; }
+    .btn-blue { background-color: #ffffff; border: 2px solid #1a3ba1; color: #1a3ba1; }
+
+    section { padding: 50px 20px; max-width: 1000px; margin: auto; }
+    section h2 { font-size: 1.6em; margin-bottom: 30px; color: #1a3ba1; }
+
+    .grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; }
+    .card {
+      background: white;
+      flex: 1 1 calc(33% - 20px);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      min-width: 250px;
+    }
+    .card h3 { margin-bottom: 10px; color: #1a3ba1; }
+    .card ul { padding-left: 20px; }
+    .card ul li { margin-bottom: 8px; }
+
+    footer {
+      background: #1a3ba1;
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .grid { flex-direction: column; }
+      .card { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="amorins_logo_youtube.png" alt="Logo Amorins Contábil">
+  <h1>Bem-vindo à Amorins Contábil</h1>
+  <p class="sub">Oferecemos serviços financeiros especializados para MEI, empresas e pessoas físicas, com atendimento personalizado e soluções eficientes para suas necessidades.</p>
+  <div class="cta">
+    <a href="https://www.youtube.com/@AmorinsContabil" class="btn-red" target="_blank">Inscreva-se no Canal</a>
+    <a href="#servicos" class="btn-blue">Conheça Nossos Serviços</a>
+  </div>
+</header>
+
+<nav>
+  <a href="#servicos">Serviços</a>
+  <a href="#contato">Fale Conosco</a>
+</nav>
+
+<section id="servicos">
+  <h2>Nossos Serviços</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Para MEI</h3>
+      <ul>
+        <li>Abertura de MEI</li>
+        <li>Encerramento de MEI</li>
+        <li>Inclusão de CNAE</li>
+        <li>Geração de DAS</li>
+        <li>Declaração Anual</li>
+        <li>Acompanhamento</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Para Empresas</h3>
+      <ul>
+        <li>Abertura de Empresa</li>
+        <li>Acompanhamento do Simples Nacional</li>
+        <li>Regularização de CNPJ</li>
+        <li>Acompanhamento Contábil</li>
+        <li>Planejamento Tributário</li>
+        <li>Alterações Contratuais</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Para Pessoa Física</h3>
+      <ul>
+        <li>Declaração de IRPF</li>
+        <li>Regularização Fiscal</li>
+        <li>Parcelamento de Dívidas Fiscais</li>
+        <li>Planejamento Financeiro</li>
+        <li>Consultoria Tributária</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="contato">
+  <h2>Entre em Contato</h2>
+  <div class="grid">
+    <div class="card">
+      <p><strong>Canal no YouTube:</strong><br>
+      <a href="https://www.youtube.com/@AmorinsContabil" target="_blank">youtube.com/@AmorinsContabil</a></p>
+      <p><strong>Email:</strong><br> amorinscontabil@gmail.com</p>
+      <p><strong>Telefone:</strong><br> (71) 99945-4356</p>
+      <p><strong>Localização:</strong><br> Brasil</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2025 Amorins Contábil. Todos os direitos reservados.</p>
+</footer>
+
+</body>
+</html>
