@@ -10,7 +10,12 @@ export async function entrar(_estado, formData) {
     email: String(formData.get('email')).trim(),
     password: String(formData.get('senha')),
   })
-  if (error) return { erro: 'E-mail ou senha incorretos.' }
+  if (error?.code === 'invalid_credentials') return { erro: 'E-mail ou senha incorretos.' }
+  if (error) {
+    // Outros erros costumam ser configuração (chaves do Supabase) e não senha errada.
+    console.error('Erro no login:', error)
+    return { erro: `Não foi possível entrar agora (${error.message}).` }
+  }
   redirect(ehAdmin(data.user) ? '/admin' : '/cliente')
 }
 

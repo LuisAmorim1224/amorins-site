@@ -29,7 +29,7 @@ footer { background: #1a3ba1; color: white; text-align: center; padding: 30px 20
 
 /* Área do cliente e administração */
 .barra { background: #1a3ba1; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.barra a, .barra button { color: white; }
+.barra a, .barra button, .barra button.link { color: white; }
 .barra .marca { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: bold; }
 .barra .marca img { width: 36px; height: 36px; }
 .painel { max-width: 900px; margin: 30px auto; padding: 0 16px; display: grid; gap: 24px; }
