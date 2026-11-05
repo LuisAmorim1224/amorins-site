@@ -17,8 +17,8 @@ export default function NovoCliente() {
           <input name="cpf_cnpj" required inputMode="numeric" />
         </label>
         <label>
-          E-mail (usado para entrar)
-          <input type="email" name="email" required />
+          E-mail de contato (opcional para CNPJ)
+          <input type="email" name="email" />
         </label>
         <label>
           Celular (opcional)
@@ -33,13 +33,14 @@ export default function NovoCliente() {
           <input type="number" name="dia" min={1} max={28} defaultValue={5} />
         </label>
         <label>
-          Senha inicial do cliente
-          <input name="senha" minLength={8} required autoComplete="off" />
+          Senha inicial (só para CPF)
+          <input name="senha" minLength={8} autoComplete="off" />
         </label>
       </div>
       <p className="vazio">
-        Se você deixar o honorário em branco, o cliente só terá acesso aos documentos, sem cobrança
-        automática.
+        Com CNPJ, o cliente entra com o próprio CNPJ e a senha inicial são os 6 primeiros números
+        dele; no primeiro acesso ele é obrigado a criar uma senha nova. Com CPF, informe e-mail e
+        senha. Honorário em branco = sem cobrança automática.
       </p>
       {estado.erro && <p className="erro">{estado.erro}</p>}
       <div>

@@ -7,6 +7,14 @@ Página institucional + **Área do Cliente**, onde cada cliente entra com e-mail
 - ver a ficha da empresa (dados da Receita, CNAEs, sócios) e as pendências;
 - trocar a própria senha.
 
+### Acesso pelo CNPJ
+
+- Cliente com CNPJ entra com o **próprio CNPJ**; a senha inicial são os **6 primeiros números** do CNPJ.
+- Como o CNPJ é público, no primeiro acesso o cliente é **obrigado a criar uma senha nova** (mínimo 8 caracteres, sem o CNPJ). Até lá o banco não entrega nenhum dado dele (regras em `003_primeiro_acesso.sql`).
+- Por trás, cada CNPJ vira um e-mail interno `CNPJ@clientes.amorinscontabilidade.com.br`, que ninguém usa nem recebe. O e-mail de contato é opcional.
+- Se o cliente esquecer a senha, o admin clica em **Restaurar senha inicial** na página do cliente.
+- Cliente com CPF continua entrando com e-mail e senha.
+
 ### Ficha cadastral
 
 - Ao cadastrar um cliente com CNPJ, o site consulta os dados públicos da Receita Federal (pela BrasilAPI) e preenche razão social, situação, CNAEs, endereço e sócios. O botão **Atualizar dados pela Receita Federal** repete a consulta.
@@ -33,7 +41,7 @@ Ao cadastrar um cliente com honorário, o site cria o cliente no Asaas e uma ass
 
 ### 1. Supabase
 1. Crie uma conta em https://supabase.com e um projeto novo (região São Paulo).
-2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos).
+2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos) e com `supabase/003_primeiro_acesso.sql` (bloqueia os dados enquanto o cliente não troca a senha inicial).
 3. Em **Authentication > Users > Add user**, crie o seu usuário de administrador com o e-mail que vai em `ADMIN_EMAIL`.
 4. Em **Project Settings > API**, copie a *Project URL*, a chave *anon* e a chave *service_role*.
 
