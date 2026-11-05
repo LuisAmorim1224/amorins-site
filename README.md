@@ -4,7 +4,15 @@ Página institucional + **Área do Cliente**, onde cada cliente entra com e-mail
 
 - baixar os documentos que o escritório enviou para ele;
 - ver e pagar os honorários (boleto ou PIX) gerados automaticamente todo mês pelo Asaas;
+- ver a ficha da empresa (dados da Receita, CNAEs, sócios) e as pendências;
 - trocar a própria senha.
+
+### Ficha cadastral
+
+- Ao cadastrar um cliente com CNPJ, o site consulta os dados públicos da Receita Federal (pela BrasilAPI) e preenche razão social, situação, CNAEs, endereço e sócios. O botão **Atualizar dados pela Receita Federal** repete a consulta.
+- Na ficha do cliente dá para **importar o arquivo `cadastro-cliente.json`** (dados do sócio, NIRE, pendências) e classificar automaticamente os documentos que já estão na pasta com o mesmo nome.
+- Cada documento enviado tem **tipo** (Cartão CNPJ, contrato social, documento pessoal...) e **validade** opcional.
+- O site aponta sozinho as pendências: documentos que faltam, documentos vencidos ou vencendo em 30 dias, situação cadastral diferente de ATIVA.
 
 O administrador (você) entra pelo mesmo login e cai na página `/admin`, onde cadastra clientes, envia documentos e acompanha as cobranças.
 
@@ -25,7 +33,7 @@ Ao cadastrar um cliente com honorário, o site cria o cliente no Asaas e uma ass
 
 ### 1. Supabase
 1. Crie uma conta em https://supabase.com e um projeto novo (região São Paulo).
-2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**.
+2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos).
 3. Em **Authentication > Users > Add user**, crie o seu usuário de administrador com o e-mail que vai em `ADMIN_EMAIL`.
 4. Em **Project Settings > API**, copie a *Project URL*, a chave *anon* e a chave *service_role*.
 
