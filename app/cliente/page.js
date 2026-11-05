@@ -3,9 +3,10 @@ import Barra from '@/components/Barra'
 import Cobrancas from '@/components/Cobrancas'
 import Documentos from '@/components/Documentos'
 import FichaCadastral from '@/components/FichaCadastral'
+import PrimeiroAcesso from '@/components/PrimeiroAcesso'
 import TrocarSenha from '@/components/TrocarSenha'
 import { listarCobrancas } from '@/lib/asaas'
-import { ehAdmin, getUsuario } from '@/lib/auth'
+import { ehAdmin, getUsuario, precisaTrocarSenha } from '@/lib/auth'
 import { listarDocumentos } from '@/lib/documentos'
 import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
 import { createClient } from '@/lib/supabase/server'
@@ -17,6 +18,21 @@ export default async function AreaDoCliente() {
   const user = await getUsuario()
   if (!user) redirect('/login')
   if (ehAdmin(user)) redirect('/admin')
+
+  // Ainda com a senha inicial: mostra só a criação de senha, sem buscar nenhum dado.
+  if (precisaTrocarSenha(user)) {
+    return (
+      <>
+        <Barra titulo="Área do Cliente" inicio="/cliente" />
+        <main className="painel">
+          <h1>Primeiro acesso</h1>
+          <div className="caixa">
+            <PrimeiroAcesso />
+          </div>
+        </main>
+      </>
+    )
+  }
 
   const supabase = await createClient()
   const { data: cliente } = await supabase.from('clientes').select('*').eq('id', user.id).single()

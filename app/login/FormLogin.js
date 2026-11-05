@@ -8,13 +8,14 @@ export default function FormLogin() {
   return (
     <form action={acao} className="formulario">
       <label>
-        E-mail
-        <input type="email" name="email" required autoComplete="email" />
+        CNPJ ou e-mail
+        <input name="login" required autoComplete="username" placeholder="00.000.000/0000-00" />
       </label>
       <label>
         Senha
         <input type="password" name="senha" required autoComplete="current-password" />
       </label>
+      <p className="vazio">No primeiro acesso, a senha são os 6 primeiros números do CNPJ.</p>
       {estado.erro && <p className="erro">{estado.erro}</p>}
       <button disabled={enviando}>{enviando ? 'Entrando...' : 'Entrar'}</button>
     </form>

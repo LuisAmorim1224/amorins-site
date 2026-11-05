@@ -2,15 +2,17 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { ehAdmin } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ehAdmin, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha } from '@/lib/login'
 
 export async function entrar(_estado, formData) {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: String(formData.get('email')).trim(),
+    email: emailDeLogin(formData.get('login')),
     password: String(formData.get('senha')),
   })
-  if (error?.code === 'invalid_credentials') return { erro: 'E-mail ou senha incorretos.' }
+  if (error?.code === 'invalid_credentials') return { erro: 'CNPJ/e-mail ou senha incorretos.' }
   if (error) {
     // Outros erros costumam ser configuração (chaves do Supabase) e não senha errada.
     console.error('Erro no login:', error)
@@ -26,11 +28,41 @@ export async function sair() {
 }
 
 export async function trocarSenha(_estado, formData) {
+  const user = await getUsuario()
+  if (!user) redirect('/login')
   const senha = String(formData.get('senha'))
-  if (senha.length < 8) return { erro: 'A senha precisa ter pelo menos 8 caracteres.' }
-  if (senha !== formData.get('confirmacao')) return { erro: 'As duas senhas não são iguais.' }
+  const erro = erroNaNovaSenha(senha, formData.get('confirmacao'), cnpjDoEmailDeLogin(user.email))
+  if (erro) return { erro }
   const supabase = await createClient()
   const { error } = await supabase.auth.updateUser({ password: senha })
   if (error) return { erro: 'Não foi possível trocar a senha. Tente de novo.' }
   return { ok: 'Senha alterada.' }
+}
+
+// Primeiro acesso: troca a senha inicial (6 dígitos do CNPJ) e libera a Área do Cliente.
+// A marca "trocar_senha" fica no app_metadata, que só o servidor consegue alterar; as regras
+// do banco (RLS) escondem os dados enquanto ela estiver ligada.
+export async function definirSenhaPrimeiroAcesso(_estado, formData) {
+  const user = await getUsuario()
+  if (!user) redirect('/login')
+  if (!precisaTrocarSenha(user)) redirect('/cliente')
+
+  const senha = String(formData.get('senha'))
+  const erro = erroNaNovaSenha(senha, formData.get('confirmacao'), cnpjDoEmailDeLogin(user.email))
+  if (erro) return { erro }
+
+  const { error } = await createAdminClient().auth.admin.updateUserById(user.id, {
+    password: senha,
+    app_metadata: { ...user.app_metadata, trocar_senha: false },
+  })
+  if (error) {
+    console.error('Erro ao definir senha no primeiro acesso:', error)
+    return { erro: 'Não foi possível salvar a senha. Tente de novo.' }
+  }
+
+  // Entra de novo para a sessão receber a marca atualizada.
+  const supabase = await createClient()
+  const { error: erroLogin } = await supabase.auth.signInWithPassword({ email: user.email, password: senha })
+  if (erroLogin) redirect('/login')
+  redirect('/cliente')
 }

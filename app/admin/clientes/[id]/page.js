@@ -11,6 +11,9 @@ import { reais } from '@/lib/formato'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
 import { excluirDocumento, tentarCobrancaDeNovo } from '../../acoes'
+import { precisaTrocarSenha } from '@/lib/auth'
+import { cnpjDoEmailDeLogin, ehEmailDeLogin } from '@/lib/login'
+import AcessoCliente from './AcessoCliente'
 import AcoesFicha from './AcoesFicha'
 import EnviarDocumentos from './EnviarDocumentos'
 
@@ -21,6 +24,8 @@ export default async function Cliente({ params }) {
   const { data: cliente } = await supabase.from('clientes').select('*').eq('id', id).maybeSingle()
   if (!cliente) notFound()
 
+  const { data: acesso } = await supabase.auth.admin.getUserById(id)
+  const usuario = acesso?.user
   const documentos = await listarDocumentos(supabase, id)
   const { data: socios } = await supabase.from('socios').select('*').eq('cliente_id', id).order('criado_em')
   const pendencias = [
@@ -46,10 +51,18 @@ export default async function Cliente({ params }) {
           <a href="/admin">← Clientes</a>
           <h1>{cliente.nome}</h1>
           <p className="vazio">
-            {cliente.email} · {cliente.cpf_cnpj}
+            {ehEmailDeLogin(cliente.email) ? 'Sem e-mail de contato' : cliente.email} · {cliente.cpf_cnpj}
             {cliente.valor_honorario &&
               ` · ${reais(cliente.valor_honorario)} todo dia ${cliente.dia_vencimento}`}
           </p>
+        </div>
+        <div className="caixa">
+          <h2>Acesso à Área do Cliente</h2>
+          <AcessoCliente
+            clienteId={id}
+            porCnpj={Boolean(cnpjDoEmailDeLogin(usuario?.email))}
+            aguardandoPrimeiroAcesso={precisaTrocarSenha(usuario)}
+          />
         </div>
         <div className="caixa">
           <h2>Ficha cadastral</h2>

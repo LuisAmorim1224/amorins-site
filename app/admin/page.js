@@ -1,6 +1,8 @@
 import Barra from '@/components/Barra'
 import { exigirAdmin } from '@/lib/auth'
+import { formatarCnpj } from '@/lib/cnpj'
 import { reais } from '@/lib/formato'
+import { ehEmailDeLogin } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 import NovoCliente from './NovoCliente'
 
@@ -27,7 +29,9 @@ export default async function Admin() {
                     <a href={`/admin/clientes/${c.id}`}>
                       <strong>{c.nome}</strong>
                     </a>
-                    <div className="info">{c.email}</div>
+                    <div className="info">
+                      {ehEmailDeLogin(c.email) ? `Acesso pelo CNPJ ${formatarCnpj(c.cpf_cnpj)}` : c.email}
+                    </div>
                   </div>
                   <div className="info">
                     {c.valor_honorario

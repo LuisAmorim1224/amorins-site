@@ -7,6 +7,7 @@ import { exigirAdmin } from '@/lib/auth'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
+import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
@@ -15,29 +16,49 @@ export async function cadastrarCliente(_estado, formData) {
   await exigirAdmin()
   const dados = {
     nome: String(formData.get('nome')).trim(),
-    email: String(formData.get('email')).trim().toLowerCase(),
+    email: String(formData.get('email') || '').trim().toLowerCase(),
     cpf_cnpj: somenteNumeros(formData.get('cpf_cnpj')),
     telefone: somenteNumeros(formData.get('telefone')) || null,
     valor_honorario: Number(String(formData.get('valor') || '0').replace(',', '.')) || null,
     dia_vencimento: Number(formData.get('dia')) || null,
   }
-  const senha = String(formData.get('senha'))
-
-  if (!dados.nome || !dados.email) return { erro: 'Preencha nome e e-mail.' }
-  if (senha.length < 8) return { erro: 'A senha inicial precisa ter pelo menos 8 caracteres.' }
+  if (!dados.nome) return { erro: 'Preencha o nome ou razão social.' }
   if (![11, 14].includes(dados.cpf_cnpj.length)) return { erro: 'Informe um CPF (11 números) ou CNPJ (14 números).' }
   if (dados.valor_honorario && !(dados.dia_vencimento >= 1 && dados.dia_vencimento <= 28)) {
     return { erro: 'O dia de vencimento precisa ser entre 1 e 28.' }
   }
 
+  // CNPJ: o cliente entra com o próprio CNPJ e a senha inicial são os 6 primeiros dígitos,
+  // trocada obrigatoriamente no primeiro acesso. O e-mail vira só contato (opcional).
+  // CPF: continua entrando com e-mail e senha definida aqui.
+  const porCnpj = dados.cpf_cnpj.length === 14
+  let acesso
+  if (porCnpj) {
+    acesso = {
+      email: emailDeLogin(dados.cpf_cnpj),
+      password: senhaInicial(dados.cpf_cnpj),
+      app_metadata: { trocar_senha: true },
+    }
+    if (!dados.email) dados.email = acesso.email
+  } else {
+    const senha = String(formData.get('senha') || '')
+    if (!dados.email) return { erro: 'Para cliente com CPF, informe o e-mail de acesso.' }
+    if (senha.length < 8) return { erro: 'A senha inicial precisa ter pelo menos 8 caracteres.' }
+    acesso = { email: dados.email, password: senha }
+  }
+
   const supabase = createAdminClient()
   const { data: criado, error: erroUsuario } = await supabase.auth.admin.createUser({
-    email: dados.email,
-    password: senha,
+    ...acesso,
     email_confirm: true,
   })
   if (erroUsuario) {
-    return { erro: `Não foi possível criar o acesso: ${erroUsuario.message}` }
+    const jaExiste = /already|registered|exists/i.test(erroUsuario.message)
+    return {
+      erro: jaExiste
+        ? 'Já existe um acesso com este CNPJ/e-mail.'
+        : `Não foi possível criar o acesso: ${erroUsuario.message}`,
+    }
   }
 
   const cliente = { id: criado.user.id, ...dados }
@@ -111,6 +132,24 @@ export async function autorizarEnvio(clienteId, nomeArquivo) {
 export async function atualizarDocumentos(clienteId) {
   await exigirAdmin()
   revalidatePath(`/admin/clientes/${clienteId}`)
+}
+
+// Cliente esqueceu a senha: volta para a senha inicial (6 primeiros dígitos do CNPJ)
+// e exige criar uma nova no próximo acesso.
+export async function restaurarSenhaInicial(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.auth.admin.getUserById(id)
+  if (error || !data?.user) return { erro: 'Acesso do cliente não encontrado.' }
+  const cnpj = cnpjDoEmailDeLogin(data.user.email)
+  if (!cnpj) return { erro: 'Este cliente entra por e-mail, não por CNPJ.' }
+  const { error: erroAtualizar } = await supabase.auth.admin.updateUserById(id, {
+    password: senhaInicial(cnpj),
+    app_metadata: { ...data.user.app_metadata, trocar_senha: true },
+  })
+  if (erroAtualizar) return { erro: `Não foi possível restaurar: ${erroAtualizar.message}` }
+  return { ok: 'Senha restaurada. O cliente entra com os 6 primeiros números do CNPJ e cria uma nova.' }
 }
 
 // Guarda o tipo e a validade do arquivo que acabou de ser enviado.
