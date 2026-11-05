@@ -10,9 +10,13 @@ import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
 import { reais } from '@/lib/formato'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
-import { excluirDocumento, tentarCobrancaDeNovo } from '../../acoes'
+import { excluirDocumento, excluirNotaEmitida, tentarCobrancaDeNovo } from '../../acoes'
 import { precisaTrocarSenha } from '@/lib/auth'
 import { cnpjDoEmailDeLogin, ehEmailDeLogin } from '@/lib/login'
+import ListaPedidos from '@/components/cliente/ListaPedidos'
+import PreviaImpostos from '@/components/cliente/PreviaImpostos'
+import { dataBR } from '@/lib/formato'
+import AcoesPedido from '../../AcoesPedido'
 import AcessoCliente from './AcessoCliente'
 import AcoesFicha from './AcoesFicha'
 import EnviarDocumentos from './EnviarDocumentos'
@@ -28,6 +32,8 @@ export default async function Cliente({ params }) {
   const usuario = acesso?.user
   const documentos = await listarDocumentos(supabase, id)
   const { data: socios } = await supabase.from('socios').select('*').eq('cliente_id', id).order('criado_em')
+  const { data: pedidos } = await supabase.from('pedidos_nota').select('*').eq('cliente_id', id).order('criado_em', { ascending: false }).limit(50)
+  const { data: notas } = await supabase.from('notas_emitidas').select('*').eq('cliente_id', id).order('data_emissao', { ascending: false }).limit(500)
   const pendencias = [
     ...(cliente.pendencias || []),
     ...pendenciasAutomaticas({ cliente, socios: socios || [], documentos, hoje: isoDe(hojeNaBahia()) }),
@@ -71,8 +77,38 @@ export default async function Cliente({ params }) {
             clienteId={id}
             temCnpj={cliente.cpf_cnpj?.length === 14}
             regime={cliente.regime_tributario}
+            anexo={cliente.anexo_simples}
             pendencias={cliente.pendencias}
           />
+        </div>
+        <div className="caixa">
+          <h2>Pedidos de nota fiscal</h2>
+          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} />
+        </div>
+        <div className="caixa">
+          <h2>Notas emitidas e prévia de impostos</h2>
+          <PreviaImpostos cliente={cliente} notas={notas || []} hoje={isoDe(hojeNaBahia())} />
+          {notas?.length ? (
+            <ul className="lista">
+              {notas.map((n) => (
+                <li key={n.id}>
+                  <div>
+                    <strong>{reais(n.valor)}</strong> · {dataBR(n.data_emissao)}
+                    <div className="info">
+                      {n.numero ? `Nota nº ${n.numero}` : 'Sem número'}
+                      {n.tomador && ` · ${n.tomador}`} · lançada pelo {n.lancada_por === 'escritorio' ? 'escritório' : 'cliente'}
+                    </div>
+                  </div>
+                  <form action={excluirNotaEmitida}>
+                    <input type="hidden" name="id" value={n.id} />
+                    <button className="perigo">Excluir</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="vazio">Nenhuma nota lançada.</p>
+          )}
         </div>
         <div className="caixa">
           <h2>Enviar documentos</h2>

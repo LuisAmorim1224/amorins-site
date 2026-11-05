@@ -1,9 +1,9 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Amorins Contábil',
+  title: 'Amorins Contábil · Contabilidade digital e regularização de CNPJ',
   description:
-    'Serviços contábeis para MEI, empresas e pessoas físicas, com atendimento personalizado.',
+    'Contabilidade digital para todo o Brasil: regularização de CNPJ, MEI, Simples Nacional e Imposto de Renda, com Área do Cliente online.',
 }
 
 export default function RootLayout({ children }) {

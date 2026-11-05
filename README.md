@@ -41,7 +41,7 @@ Ao cadastrar um cliente com honorário, o site cria o cliente no Asaas e uma ass
 
 ### 1. Supabase
 1. Crie uma conta em https://supabase.com e um projeto novo (região São Paulo).
-2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos) e com `supabase/003_primeiro_acesso.sql` (bloqueia os dados enquanto o cliente não troca a senha inicial).
+2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos), com `supabase/003_primeiro_acesso.sql` (bloqueia os dados enquanto o cliente não troca a senha inicial) e com `supabase/004_area_cliente.sql` (pedidos de nota, notas emitidas, envio de arquivos pelo cliente e anexo do Simples).
 3. Em **Authentication > Users > Add user**, crie o seu usuário de administrador com o e-mail que vai em `ADMIN_EMAIL`.
 4. Em **Project Settings > API**, copie a *Project URL*, a chave *anon* e a chave *service_role*.
 
