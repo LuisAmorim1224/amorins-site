@@ -163,7 +163,7 @@ export default function Inicio() {
       <section className="secao" id="historia">
         <div className="conteudo historia">
           <aside className="perfil">
-            <div className="iniciais">LA</div>
+            <img className="foto" src="/luis-amorim.jpg" alt="Luis Amorim, contador da Amorins Contábil" width={160} height={160} />
             <h3>Luis Amorim</h3>
             <p>Contador · CRC-BA 039792/O-0</p>
             <ul>
