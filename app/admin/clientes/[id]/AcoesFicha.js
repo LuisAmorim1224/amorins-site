@@ -40,7 +40,13 @@ export default function AcoesFicha({ clienteId, temCnpj, regime, pendencias }) {
         <Mensagem estado={estadoFicha} />
       </form>
 
-      <form action={salvarDadosInternos} className="formulario">
+      {/* A key recria o formulário quando os dados salvos mudam; sem ela o React reseta o
+          select para a opção inicial depois de salvar e o próximo "Salvar" apagaria o regime. */}
+      <form
+        key={`${regime || ''}|${(pendencias || []).join('\n')}`}
+        action={salvarDadosInternos}
+        className="formulario"
+      >
         <input type="hidden" name="id" value={clienteId} />
         <label>
           Regime tributário
