@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { criarAssinatura, criarClienteAsaas } from '@/lib/asaas'
 import { exigirAdmin } from '@/lib/auth'
+import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
+import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
@@ -43,6 +45,16 @@ export async function cadastrarCliente(_estado, formData) {
   if (erroCadastro) {
     await supabase.auth.admin.deleteUser(cliente.id)
     return { erro: `Não foi possível salvar o cadastro: ${erroCadastro.message}` }
+  }
+
+  // Com CNPJ, já traz os dados públicos da Receita. Se a consulta falhar, o cadastro continua
+  // e dá para tentar de novo pela ficha do cliente.
+  if (cliente.cpf_cnpj.length === 14) {
+    try {
+      await gravarDadosDaReceita(supabase, cliente.id, cliente.cpf_cnpj)
+    } catch (e) {
+      console.error('Consulta do CNPJ no cadastro falhou:', e)
+    }
   }
 
   if (cliente.valor_honorario) {
@@ -101,9 +113,127 @@ export async function atualizarDocumentos(clienteId) {
   revalidatePath(`/admin/clientes/${clienteId}`)
 }
 
+// Guarda o tipo e a validade do arquivo que acabou de ser enviado.
+export async function registrarDocumento(clienteId, caminho, tipo, validade) {
+  await exigirAdmin()
+  if (!caminho.startsWith(`${clienteId}/`)) throw new Error('Caminho de arquivo inválido.')
+  const { error } = await createAdminClient()
+    .from('documentos_info')
+    .upsert({
+      caminho,
+      cliente_id: clienteId,
+      tipo: tipoDocumento(tipo),
+      validade: /^\d{4}-\d{2}-\d{2}$/.test(validade || '') ? validade : null,
+    })
+  if (error) throw new Error(error.message)
+}
+
 export async function excluirDocumento(formData) {
   await exigirAdmin()
   const caminho = String(formData.get('caminho'))
-  await createAdminClient().storage.from(PASTA).remove([caminho])
+  const supabase = createAdminClient()
+  await supabase.storage.from(PASTA).remove([caminho])
+  await supabase.from('documentos_info').delete().eq('caminho', caminho)
   revalidatePath(`/admin/clientes/${caminho.split('/')[0]}`)
+}
+
+// ---------- Ficha cadastral ----------
+
+async function gravarDadosDaReceita(supabase, clienteId, cnpj) {
+  const dados = await buscarCnpj(cnpj)
+  const campos = dadosDaReceita(dados)
+  // A Receita só informa Simples/MEI; não apaga um regime escolhido à mão (ex.: Lucro Presumido).
+  if (!campos.regime_tributario) delete campos.regime_tributario
+  const { error } = await supabase
+    .from('clientes')
+    .update({ ...campos, dados_receita_em: new Date().toISOString() })
+    .eq('id', clienteId)
+  if (error) throw new Error(error.message)
+
+  // Sócios publicados pela Receita entram só se ainda não houver nenhum cadastrado.
+  const { count } = await supabase
+    .from('socios')
+    .select('id', { count: 'exact', head: true })
+    .eq('cliente_id', clienteId)
+  const socios = sociosDaReceita(dados)
+  if (!count && socios.length) {
+    await supabase.from('socios').insert(socios.map((s) => ({ ...s, cliente_id: clienteId })))
+  }
+}
+
+export async function atualizarDadosReceita(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const supabase = createAdminClient()
+  const { data: cliente } = await supabase.from('clientes').select('cpf_cnpj').eq('id', id).single()
+  if (!cliente || cliente.cpf_cnpj?.length !== 14) return { erro: 'Este cliente não tem CNPJ cadastrado.' }
+  try {
+    await gravarDadosDaReceita(supabase, id, cliente.cpf_cnpj)
+  } catch (e) {
+    return { erro: e.message }
+  }
+  revalidatePath(`/admin/clientes/${id}`)
+  return { ok: 'Dados atualizados com a Receita Federal.' }
+}
+
+export async function importarFicha(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const arquivo = formData.get('ficha')
+  if (!arquivo || typeof arquivo === 'string' || !arquivo.size) return { erro: 'Escolha o arquivo da ficha (.json).' }
+  if (arquivo.size > 1024 * 1024) return { erro: 'Arquivo grande demais para uma ficha.' }
+
+  let convertido
+  try {
+    convertido = fichaParaBanco(JSON.parse(await arquivo.text()))
+  } catch (e) {
+    return { erro: e instanceof SyntaxError ? 'O arquivo não é um JSON válido.' : e.message }
+  }
+
+  const supabase = createAdminClient()
+  const { data: atual } = await supabase.from('clientes').select('cpf_cnpj').eq('id', id).single()
+  if (!atual) return { erro: 'Cliente não encontrado.' }
+  if (convertido.cliente.cpf_cnpj && convertido.cliente.cpf_cnpj !== atual.cpf_cnpj) {
+    return { erro: 'O CNPJ da ficha é diferente do CNPJ deste cliente. Nada foi importado.' }
+  }
+
+  const { error: erroCliente } = await supabase.from('clientes').update(convertido.cliente).eq('id', id)
+  if (erroCliente) return { erro: `Não foi possível salvar a ficha: ${erroCliente.message}` }
+
+  if (convertido.socios.length) {
+    await supabase.from('socios').delete().eq('cliente_id', id)
+    const { error: erroSocios } = await supabase
+      .from('socios')
+      .insert(convertido.socios.map((s) => ({ ...s, cliente_id: id })))
+    if (erroSocios) return { erro: `A empresa foi salva, mas os sócios falharam: ${erroSocios.message}` }
+  }
+
+  // Classifica os arquivos que já estão na pasta do cliente com o mesmo nome da ficha.
+  const { data: naPasta } = await supabase.storage.from(PASTA).list(id)
+  const existentes = new Set((naPasta || []).map((a) => a.name))
+  const classificados = convertido.documentos
+    .map((d) => ({ ...d, nome: nomeSeguro(d.arquivo) }))
+    .filter((d) => existentes.has(d.nome))
+    .map((d) => ({ caminho: `${id}/${d.nome}`, cliente_id: id, tipo: d.tipo, validade: d.validade }))
+  if (classificados.length) await supabase.from('documentos_info').upsert(classificados)
+
+  revalidatePath(`/admin/clientes/${id}`)
+  return {
+    ok: `Ficha importada: empresa, ${convertido.socios.length} sócio(s) e ${classificados.length} documento(s) classificados.`,
+  }
+}
+
+export async function salvarDadosInternos(formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const regime = String(formData.get('regime') || '')
+  const pendencias = String(formData.get('pendencias') || '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+  await createAdminClient()
+    .from('clientes')
+    .update({ regime_tributario: REGIMES.includes(regime) ? regime : null, pendencias })
+    .eq('id', id)
+  revalidatePath(`/admin/clientes/${id}`)
 }

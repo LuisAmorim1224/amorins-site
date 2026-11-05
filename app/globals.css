@@ -48,6 +48,16 @@ footer { background: #1a3ba1; color: white; text-align: center; padding: 30px 20
 .etiqueta.aberta { background: #fff8e1; color: #8d6e00; }
 .etiqueta.vencida { background: #ffebee; color: #c62828; }
 
+.ficha { display: grid; gap: 12px; }
+.ficha h3 { color: #1a3ba1; font-size: 1.05em; margin-top: 8px; }
+.ficha .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.campo { display: grid; gap: 2px; }
+.campo .rotulo { color: #777; font-size: 0.85em; }
+.cnaes { list-style: none; display: grid; gap: 4px; }
+.pendencias { padding-left: 20px; color: #8d6e00; display: grid; gap: 4px; }
+.acoes-ficha { display: grid; gap: 16px; border-top: 1px solid #eee; padding-top: 16px; margin-top: 8px; }
+select, textarea { font: inherit; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-weight: normal; }
+
 form.formulario { display: grid; gap: 12px; }
 form.formulario .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 label { display: grid; gap: 4px; font-weight: 600; font-size: 0.95em; }
