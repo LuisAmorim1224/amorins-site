@@ -262,9 +262,75 @@ export async function importarFicha(_estado, formData) {
   }
 }
 
+// ---------- Pedidos de nota e notas emitidas ----------
+
+const valorEmReais = (v) => {
+  const s = String(v || '').trim().replace(/\s|R\$/g, '')
+  const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s)
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN
+}
+
+// O escritório emitiu a nota: marca o pedido e já lança a nota na prévia de impostos do cliente.
+export async function marcarPedidoEmitido(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const supabase = createAdminClient()
+  const { data: pedido } = await supabase.from('pedidos_nota').select('*').eq('id', id).single()
+  if (!pedido || pedido.status !== 'pendente') return { erro: 'Pedido não encontrado ou já resolvido.' }
+
+  const numero = String(formData.get('numero') || '').trim() || null
+  const valor = valorEmReais(formData.get('valor') || pedido.valor)
+  const data = /^\d{4}-\d{2}-\d{2}$/.test(String(formData.get('data_emissao'))) ? formData.get('data_emissao') : null
+  if (!(valor > 0)) return { erro: 'Informe o valor da nota emitida.' }
+  if (!data) return { erro: 'Informe a data de emissão.' }
+
+  const { error } = await supabase
+    .from('pedidos_nota')
+    .update({ status: 'emitida', numero_nota: numero, atualizado_em: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { erro: error.message }
+  await supabase.from('notas_emitidas').insert({
+    cliente_id: pedido.cliente_id,
+    numero,
+    data_emissao: data,
+    valor,
+    tomador: pedido.tomador_nome,
+    pedido_id: pedido.id,
+    lancada_por: 'escritorio',
+  })
+  revalidatePath('/admin')
+  revalidatePath(`/admin/clientes/${pedido.cliente_id}`)
+  return { ok: 'Pedido marcado como emitido. Envie o PDF/XML em "Enviar documentos" com o tipo Nota fiscal.' }
+}
+
+export async function cancelarPedido(formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const resposta = String(formData.get('resposta') || '').trim().slice(0, 500) || null
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('pedidos_nota')
+    .update({ status: 'cancelada', resposta, atualizado_em: new Date().toISOString() })
+    .eq('id', id)
+    .eq('status', 'pendente')
+    .select('cliente_id')
+    .single()
+  revalidatePath('/admin')
+  if (data) revalidatePath(`/admin/clientes/${data.cliente_id}`)
+}
+
+export async function excluirNotaEmitida(formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const supabase = createAdminClient()
+  const { data } = await supabase.from('notas_emitidas').delete().eq('id', id).select('cliente_id').single()
+  if (data) revalidatePath(`/admin/clientes/${data.cliente_id}`)
+}
+
 export async function salvarDadosInternos(formData) {
   await exigirAdmin()
   const id = String(formData.get('id'))
+  const anexo = String(formData.get('anexo') || '')
   const regime = String(formData.get('regime') || '')
   const pendencias = String(formData.get('pendencias') || '')
     .split('\n')
@@ -272,7 +338,11 @@ export async function salvarDadosInternos(formData) {
     .filter(Boolean)
   await createAdminClient()
     .from('clientes')
-    .update({ regime_tributario: REGIMES.includes(regime) ? regime : null, pendencias })
+    .update({
+      regime_tributario: REGIMES.includes(regime) ? regime : null,
+      anexo_simples: ['I', 'II', 'III', 'IV', 'V'].includes(anexo) ? anexo : null,
+      pendencias,
+    })
     .eq('id', id)
   revalidatePath(`/admin/clientes/${id}`)
 }

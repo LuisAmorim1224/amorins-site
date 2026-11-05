@@ -10,7 +10,7 @@ function Mensagem({ estado }) {
   return null
 }
 
-export default function AcoesFicha({ clienteId, temCnpj, regime, pendencias }) {
+export default function AcoesFicha({ clienteId, temCnpj, regime, anexo, pendencias }) {
   const [estadoReceita, acaoReceita, consultando] = useActionState(atualizarDadosReceita, {})
   const [estadoFicha, acaoFicha, importando] = useActionState(importarFicha, {})
 
@@ -43,7 +43,7 @@ export default function AcoesFicha({ clienteId, temCnpj, regime, pendencias }) {
       {/* A key recria o formulário quando os dados salvos mudam; sem ela o React reseta o
           select para a opção inicial depois de salvar e o próximo "Salvar" apagaria o regime. */}
       <form
-        key={`${regime || ''}|${(pendencias || []).join('\n')}`}
+        key={`${regime || ''}|${anexo || ''}|${(pendencias || []).join('\n')}`}
         action={salvarDadosInternos}
         className="formulario"
       >
@@ -55,6 +55,17 @@ export default function AcoesFicha({ clienteId, temCnpj, regime, pendencias }) {
             {REGIMES.map((r) => (
               <option key={r}>{r}</option>
             ))}
+          </select>
+        </label>
+        <label>
+          Anexo do Simples (para a prévia do DAS do cliente)
+          <select name="anexo" defaultValue={anexo || ''}>
+            <option value="">Não informado</option>
+            <option value="I">Anexo I – Comércio</option>
+            <option value="II">Anexo II – Indústria</option>
+            <option value="III">Anexo III – Serviços</option>
+            <option value="IV">Anexo IV – Serviços</option>
+            <option value="V">Anexo V – Serviços</option>
           </select>
         </label>
         <label>

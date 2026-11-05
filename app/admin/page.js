@@ -4,21 +4,30 @@ import { formatarCnpj } from '@/lib/cnpj'
 import { reais } from '@/lib/formato'
 import { ehEmailDeLogin } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
+import ListaPedidos from '@/components/cliente/ListaPedidos'
+import AcoesPedido from './AcoesPedido'
 import NovoCliente from './NovoCliente'
 
 export const metadata = { title: 'Administração · Amorins Contábil' }
 
 export default async function Admin() {
   await exigirAdmin()
-  const { data: clientes } = await createAdminClient()
-    .from('clientes')
-    .select('*')
-    .order('nome')
+  const supabase = createAdminClient()
+  const { data: clientes } = await supabase.from('clientes').select('*').order('nome')
+  const { data: pendentes } = await supabase
+    .from('pedidos_nota')
+    .select('*, clientes(nome)')
+    .eq('status', 'pendente')
+    .order('criado_em')
 
   return (
     <>
       <Barra titulo="Administração" inicio="/admin" />
       <main className="painel">
+        <div className="caixa">
+          <h2>Notas fiscais para emitir {pendentes?.length ? `(${pendentes.length})` : ''}</h2>
+          <ListaPedidos pedidos={pendentes || []} acoes={AcoesPedido} mostrarCliente />
+        </div>
         <h1>Clientes</h1>
         <div className="caixa">
           {clientes?.length ? (
