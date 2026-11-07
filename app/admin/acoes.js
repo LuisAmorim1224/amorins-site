@@ -465,6 +465,7 @@ export async function salvarServico(_estado, formData) {
     nome: String(formData.get('nome') || '').trim().slice(0, 120),
     cod_trib_nac: somenteNumeros(formData.get('cod_trib_nac')),
     cod_nbs: somenteNumeros(formData.get('cod_nbs')) || null,
+    cod_trib_mun: somenteNumeros(formData.get('cod_trib_mun')).slice(0, 3) || null,
     cod_trib_mun: String(formData.get('cod_trib_mun') || '').trim() || null,
     aliquota_iss: percentual(formData.get('aliquota_iss')),
     exige_obra: formData.get('exige_obra') === 'on',
