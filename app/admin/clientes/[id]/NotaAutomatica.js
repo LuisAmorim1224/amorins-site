@@ -32,6 +32,10 @@ function Servico({ clienteId, servico }) {
           <input name="cod_nbs" defaultValue={s.cod_nbs} placeholder="1.0105.40.00" />
         </label>
         <label>
+          Código municipal (opcional, vem das notas importadas)
+          <input name="cod_trib_mun" defaultValue={s.cod_trib_mun || ''} inputMode="numeric" placeholder="001" />
+        </label>
+        <label>
           Alíquota ISS % (opcional, o sistema nacional já sabe)
           <input name="aliquota_iss" defaultValue={s.aliquota_iss ?? ''} inputMode="decimal" />
         </label>
