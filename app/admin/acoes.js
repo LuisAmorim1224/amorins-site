@@ -10,7 +10,7 @@ import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
-import { emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
+import { atualizarNotasDeTodos, emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 import { criarPedido } from '@/lib/pedidos'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
@@ -503,7 +503,7 @@ export async function buscarNotasAnteriores(_estado, formData) {
     revalidarCliente(id)
     const detalhe = r.notas
       ? ''
-      : ` O Emissor Nacional (${r.ambiente === 'producao' ? 'produção' : 'homologação'}) devolveu ${r.documentos} documento(s), ${r.nfse} nota(s)${r.comoTomador ? `, ${r.comoTomador} em que o cliente é tomador` : ''}. Notas emitidas no sistema da prefeitura antes do Emissor Nacional não aparecem aqui.`
+      : ` O Emissor Nacional devolveu ${r.documentos} documento(s), ${r.nfse} nota(s)${r.comoTomador ? `, ${r.comoTomador} em que o cliente é tomador` : ''}. Notas emitidas no sistema da prefeitura antes do Emissor Nacional não aparecem aqui.`
     return { ok: `${r.notas} nota(s) anteriores importadas e lançadas no gráfico dos meses${r.canceladas ? ` (${r.canceladas} cancelada(s) ignorada(s))` : ''}${r.servicosNovos ? `, ${r.servicosNovos} serviço(s) novo(s) cadastrado(s) — confira os códigos` : ''}.${detalhe}` }
   } catch (e) {
     return { erro: e.message }
@@ -562,4 +562,24 @@ export async function pedirNotaPeloEscritorio(_estado, formData) {
   revalidatePath(`/admin/clientes/${clienteId}`)
   revalidatePath('/cliente')
   return { ok: 'Pedido criado. Ele aparece em "Pedidos de nota fiscal" com o botão Emitir NFS-e.' }
+}
+
+// Botão do /admin: baixa agora as notas novas de todos os clientes com certificado.
+export async function atualizarNotasTodos() {
+  await exigirAdmin()
+  try {
+    const r = await atualizarNotasDeTodos(createAdminClient())
+    revalidatePath('/admin', 'layout')
+    return { ok: resumoAtualizacao(r) }
+  } catch (e) {
+    return { erro: e.message }
+  }
+}
+
+function resumoAtualizacao(r) {
+  const partes = [`${r.atualizados.length} cliente(s) atualizados`]
+  if (r.erros.length) partes.push(`erro em: ${r.erros.map((e) => `${e.nome} (${e.erro})`).join('; ')}`)
+  if (r.vencidos.length) partes.push(`certificado vencido: ${r.vencidos.join(', ')}`)
+  if (r.semCertificado.length) partes.push(`sem certificado: ${r.semCertificado.join(', ')}`)
+  return `${partes.join('. ')}.`
 }
