@@ -44,7 +44,7 @@ O administrador (você) entra pelo mesmo login e cai na página `/admin`, onde c
 
 Os documentos ficam numa pasta privada do Supabase, nunca no GitHub. Cada cliente só consegue abrir os arquivos da própria pasta.
 
-Ao cadastrar um cliente com honorário, o site cria o cliente no Asaas e uma assinatura mensal com o valor e o dia de vencimento informados. A partir daí o Asaas gera a cobrança todo mês e avisa o cliente por e-mail. O cliente escolhe pagar por boleto, PIX ou cartão.
+A cobrança nunca começa sozinha. Depois de cadastrar o cliente, o escritório abre a página dele, informa o valor do honorário, marca a confirmação e clica em **Ativar cobrança mensal**. O site cria o cliente no Asaas e uma assinatura mensal com vencimento sempre no **dia 5**. A partir daí o Asaas gera a cobrança todo mês e avisa o cliente por e-mail. O cliente escolhe pagar por boleto, PIX ou cartão.
 
 ## Configuração (uma vez só)
 

@@ -10,7 +10,9 @@ import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
 import { reais } from '@/lib/formato'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
-import { excluirDocumento, excluirNotaEmitida, tentarCobrancaDeNovo } from '../../acoes'
+import { excluirDocumento, excluirNotaEmitida } from '../../acoes'
+import AtivarCobranca from './AtivarCobranca'
+import CobrancaAvulsa from './CobrancaAvulsa'
 import { precisaTrocarSenha } from '@/lib/auth'
 import { cnpjDoEmailDeLogin, ehEmailDeLogin } from '@/lib/login'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
@@ -64,7 +66,7 @@ export default async function Cliente({ params }) {
           <h1>{cliente.nome}</h1>
           <p className="vazio">
             {ehEmailDeLogin(cliente.email) ? 'Sem e-mail de contato' : cliente.email} · {cliente.cpf_cnpj}
-            {cliente.valor_honorario &&
+            {cliente.asaas_subscription_id &&
               ` · ${reais(cliente.valor_honorario)} todo dia ${cliente.dia_vencimento}`}
           </p>
         </div>
@@ -130,14 +132,14 @@ export default async function Cliente({ params }) {
         </div>
         <div className="caixa">
           <h2>Cobranças</h2>
-          {cliente.valor_honorario && !cliente.asaas_subscription_id && (
-            <form action={tentarCobrancaDeNovo} style={{ marginBottom: 12 }}>
-              <input type="hidden" name="id" value={id} />
-              <p className="erro">A cobrança automática ainda não foi criada no Asaas.</p>
-              <button>Criar cobrança agora</button>
-            </form>
+          {!cliente.asaas_subscription_id && (
+            <AtivarCobranca clienteId={id} valorAtual={cliente.valor_honorario} />
           )}
           <Cobrancas cobrancas={cobrancas} erro={erroCobrancas} />
+          <details style={{ marginTop: 16 }}>
+            <summary>Gerar cobrança avulsa (mês em atraso, serviço extra)</summary>
+            <CobrancaAvulsa clienteId={id} valorSugerido={cliente.valor_honorario} />
+          </details>
         </div>
       </main>
     </>
