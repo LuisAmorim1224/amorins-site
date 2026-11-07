@@ -594,3 +594,18 @@ export async function conferirCodigos(_estado, formData) {
     return { erro: e.message }
   }
 }
+
+// Cadastra o serviço sugerido para um CNAE do cartão do CNPJ.
+export async function criarServicoDoCnae(formData) {
+  await exigirAdmin()
+  const clienteId = String(formData.get('cliente_id'))
+  const cod = somenteNumeros(formData.get('cod'))
+  if (!clienteId || cod.length !== 6) return
+  await createAdminClient()
+    .from('servicos_nota')
+    .upsert(
+      { cliente_id: clienteId, cod_trib_nac: cod, nome: String(formData.get('nome') || `Serviço ${cod}`).slice(0, 120), palavras_chave: String(formData.get('palavras') || '').slice(0, 300) || null },
+      { onConflict: 'cliente_id,cod_trib_nac', ignoreDuplicates: true },
+    )
+  revalidarCliente(clienteId)
+}

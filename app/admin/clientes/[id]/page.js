@@ -9,6 +9,7 @@ import { listarDocumentos } from '@/lib/documentos'
 import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
 import { reais } from '@/lib/formato'
 import { anexoDoServico } from '@/lib/simples'
+import { servicosDosCnaes } from '@/lib/cnae-servicos'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
 import { excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio } from '../../acoes'
@@ -53,6 +54,9 @@ export default async function Cliente({ params }) {
     ...n,
     anexo: anexoDoServico(codPorChave.get(n.chave_acesso) || codPorNumero.get(semZeros(n.numero)), cliente.anexo_simples),
   }))
+  const usadosPorCodigo = {}
+  for (const h of historico || []) usadosPorCodigo[h.cod_trib_nac] = (usadosPorCodigo[h.cod_trib_nac] || 0) + 1
+  const cnaes = servicosDosCnaes(cliente, usadosPorCodigo)
   const anoAtual = isoDe(hojeNaBahia()).slice(0, 4)
   const notasDoAno = (notas || []).filter((n) => String(n.data_emissao).startsWith(`${anoAtual}-`))
   const notasAnterioresAoAno = (notas || []).length - notasDoAno.length
@@ -105,7 +109,7 @@ export default async function Cliente({ params }) {
         </div>
         <div className="caixa">
           <h2>Nota fiscal automática (Emissor Nacional)</h2>
-          <NotaAutomatica cliente={cliente} servicos={servicos || []} notasAnteriores={notasAnteriores || 0} />
+          <NotaAutomatica cliente={cliente} servicos={servicos || []} notasAnteriores={notasAnteriores || 0} cnaes={cnaes} />
         </div>
         <div className="caixa">
           <h2>Pedidos de nota fiscal</h2>
