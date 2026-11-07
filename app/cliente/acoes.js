@@ -82,14 +82,19 @@ export async function pedirNota(_estado, formData) {
       console.error('Erro ao sugerir serviço:', e)
     }
   }
+  // Sem cliente aqui, a migração 005 ainda não rodou: grava o pedido só com os campos antigos.
+  const { obra_cep, obra_logradouro, obra_numero, obra_bairro, ...basico } = pedido
+  const registro = cliente
+    ? {
+        ...pedido,
+        servico_id: sugestao.servico?.id || null,
+        motivo_servico: sugestao.motivo,
+        status: cliente.nfse_ativa && !sugestao.servico ? 'escolher_servico' : 'pendente',
+      }
+    : basico
   const { data: criado, error } = await supabase
     .from('pedidos_nota')
-    .insert({
-      ...pedido,
-      servico_id: sugestao.servico?.id || null,
-      motivo_servico: sugestao.motivo,
-      status: cliente?.nfse_ativa && !sugestao.servico ? 'escolher_servico' : 'pendente',
-    })
+    .insert(registro)
     .select('id')
     .single()
   if (error) {
