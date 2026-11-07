@@ -9,6 +9,7 @@ import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
 
@@ -264,6 +265,8 @@ export async function importarFicha(_estado, formData) {
 
 // ---------- Pedidos de nota e notas emitidas ----------
 
+const EM_ABERTO = ['pendente', 'escolher_servico', 'erro']
+
 const valorEmReais = (v) => {
   const s = String(v || '').trim().replace(/\s|R\$/g, '')
   const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s)
@@ -276,7 +279,7 @@ export async function marcarPedidoEmitido(_estado, formData) {
   const id = String(formData.get('id'))
   const supabase = createAdminClient()
   const { data: pedido } = await supabase.from('pedidos_nota').select('*').eq('id', id).single()
-  if (!pedido || pedido.status !== 'pendente') return { erro: 'Pedido não encontrado ou já resolvido.' }
+  if (!pedido || !EM_ABERTO.includes(pedido.status)) return { erro: 'Pedido não encontrado ou já resolvido.' }
 
   const numero = String(formData.get('numero') || '').trim() || null
   const valor = valorEmReais(formData.get('valor') || pedido.valor)
@@ -298,6 +301,23 @@ export async function marcarPedidoEmitido(_estado, formData) {
     pedido_id: pedido.id,
     lancada_por: 'escritorio',
   })
+  // Emitida à mão com serviço escolhido: entra no histórico para as próximas sugestões.
+  if (pedido.servico_id) {
+    const { data: servico } = await supabase.from('servicos_nota').select('cod_trib_nac, cod_nbs').eq('id', pedido.servico_id).single()
+    if (servico) {
+      await supabase.from('historico_notas').insert({
+        cliente_id: pedido.cliente_id,
+        numero,
+        data_emissao: data,
+        descricao: pedido.descricao,
+        cod_trib_nac: servico.cod_trib_nac,
+        cod_nbs: servico.cod_nbs,
+        valor,
+        tomador: pedido.tomador_nome,
+        origem: 'manual',
+      })
+    }
+  }
   revalidatePath('/admin')
   revalidatePath(`/admin/clientes/${pedido.cliente_id}`)
   return { ok: 'Pedido marcado como emitido. Envie o PDF/XML em "Enviar documentos" com o tipo Nota fiscal.' }
@@ -312,7 +332,7 @@ export async function cancelarPedido(formData) {
     .from('pedidos_nota')
     .update({ status: 'cancelada', resposta, atualizado_em: new Date().toISOString() })
     .eq('id', id)
-    .eq('status', 'pendente')
+    .in('status', EM_ABERTO)
     .select('cliente_id')
     .single()
   revalidatePath('/admin')
@@ -345,4 +365,134 @@ export async function salvarDadosInternos(formData) {
     })
     .eq('id', id)
   revalidatePath(`/admin/clientes/${id}`)
+}
+
+// ---------- Emissão automática de NFS-e ----------
+
+const revalidarCliente = (id) => {
+  revalidatePath('/admin')
+  revalidatePath(`/admin/clientes/${id}`)
+}
+const percentual = (v) => {
+  const n = Number(String(v || '').replace(',', '.'))
+  return String(v || '').trim() && Number.isFinite(n) ? n : null
+}
+
+export async function salvarConfigNfse(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const municipio = somenteNumeros(formData.get('municipio'))
+  if (!/^\d{7}$/.test(municipio)) return { erro: 'O código IBGE do município tem 7 números (Salvador = 2927408).' }
+  const opSimples = String(formData.get('op_simples'))
+  const aliquotaSn = percentual(formData.get('aliquota_sn'))
+  if (opSimples === '3' && !(aliquotaSn > 0)) return { erro: 'Para ME/EPP do Simples, informe a alíquota aproximada do Simples (%).' }
+  const { error } = await createAdminClient()
+    .from('clientes')
+    .update({
+      nfse_ativa: formData.get('ativa') === 'on',
+      nfse_emissao_automatica: formData.get('automatica') === 'on',
+      nfse_ambiente: formData.get('ambiente') === 'producao' ? 'producao' : 'homologacao',
+      nfse_municipio: municipio,
+      nfse_inscricao_municipal: somenteNumeros(formData.get('inscricao_municipal')) || null,
+      nfse_op_simples: ['1', '2', '3'].includes(opSimples) ? opSimples : '3',
+      nfse_aliquota_sn: aliquotaSn,
+      nfse_serie: somenteNumeros(formData.get('serie')) || '1',
+    })
+    .eq('id', id)
+  if (error) return { erro: error.message }
+  revalidarCliente(id)
+  return { ok: 'Configuração da nota salva.' }
+}
+
+export async function enviarCertificado(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const arquivo = formData.get('certificado')
+  const senha = String(formData.get('senha') || '')
+  if (!arquivo || typeof arquivo === 'string' || !arquivo.size) return { erro: 'Escolha o arquivo do certificado (.pfx ou .p12).' }
+  if (arquivo.size > 100 * 1024) return { erro: 'Arquivo grande demais para um certificado A1.' }
+  if (!senha) return { erro: 'Informe a senha do certificado.' }
+  try {
+    const cert = await salvarCertificado(createAdminClient(), id, Buffer.from(await arquivo.arrayBuffer()), senha)
+    revalidarCliente(id)
+    return { ok: `Certificado salvo. Vence em ${cert.expiresOn.toLocaleDateString('pt-BR')}.` }
+  } catch (e) {
+    return { erro: e.message }
+  }
+}
+
+export async function salvarServico(_estado, formData) {
+  await exigirAdmin()
+  const clienteId = String(formData.get('cliente_id'))
+  const servico = {
+    cliente_id: clienteId,
+    nome: String(formData.get('nome') || '').trim().slice(0, 120),
+    cod_trib_nac: somenteNumeros(formData.get('cod_trib_nac')),
+    cod_nbs: somenteNumeros(formData.get('cod_nbs')) || null,
+    cod_trib_mun: String(formData.get('cod_trib_mun') || '').trim() || null,
+    aliquota_iss: percentual(formData.get('aliquota_iss')),
+    exige_obra: formData.get('exige_obra') === 'on',
+    retem_iss_tomador_pj: formData.get('retem') === 'on',
+    palavras_chave: String(formData.get('palavras_chave') || '').trim().slice(0, 500) || null,
+  }
+  if (!servico.nome) return { erro: 'Dê um nome ao serviço (ex.: Bombeamento de concreto).' }
+  if (servico.cod_trib_nac.length !== 6) return { erro: 'O código de tributação nacional tem 6 números (ex.: 07.02.02 = 070202).' }
+  if (servico.cod_nbs && servico.cod_nbs.length !== 9) return { erro: 'O código NBS tem 9 números (ex.: 1.0105.40.00 = 101054000).' }
+  const supabase = createAdminClient()
+  const id = String(formData.get('id') || '')
+  const { error } = id
+    ? await supabase.from('servicos_nota').update(servico).eq('id', id).eq('cliente_id', clienteId)
+    : await supabase.from('servicos_nota').insert(servico)
+  if (error) return { erro: /duplicate|unique/i.test(error.message) ? 'Este código já está cadastrado para o cliente.' : error.message }
+  revalidarCliente(clienteId)
+  return { ok: 'Serviço salvo.' }
+}
+
+export async function excluirServico(formData) {
+  await exigirAdmin()
+  const { data } = await createAdminClient()
+    .from('servicos_nota')
+    .delete()
+    .eq('id', String(formData.get('id')))
+    .select('cliente_id')
+    .single()
+  if (data) revalidarCliente(data.cliente_id)
+}
+
+export async function buscarNotasAnteriores(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  try {
+    const r = await importarNotasAnteriores(createAdminClient(), id)
+    revalidarCliente(id)
+    return { ok: `${r.notas} nota(s) anteriores importadas${r.servicosNovos ? `, ${r.servicosNovos} serviço(s) novo(s) cadastrado(s) — confira os códigos` : ''}.` }
+  } catch (e) {
+    return { erro: e.message }
+  }
+}
+
+// Escolhe (ou troca) o serviço do pedido e, se pedido, já emite.
+export async function escolherServicoEEmitir(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const servicoId = String(formData.get('servico_id') || '')
+  const supabase = createAdminClient()
+  const { data: pedido } = await supabase.from('pedidos_nota').select('cliente_id, status').eq('id', id).single()
+  if (!pedido || !EM_ABERTO.includes(pedido.status)) return { erro: 'Pedido não encontrado ou já resolvido.' }
+  if (!servicoId) return { erro: 'Escolha qual serviço (código) usar nesta nota.' }
+  const { data: servico } = await supabase.from('servicos_nota').select('id, nome').eq('id', servicoId).eq('cliente_id', pedido.cliente_id).single()
+  if (!servico) return { erro: 'Serviço não encontrado para este cliente.' }
+  await supabase
+    .from('pedidos_nota')
+    .update({
+      servico_id: servico.id,
+      motivo_servico: 'Escolhido pelo escritório.',
+      status: pedido.status === 'escolher_servico' ? 'pendente' : pedido.status,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq('id', id)
+  let resultado = { ok: `Serviço definido: ${servico.nome}.` }
+  if (formData.get('emitir') === 'sim') resultado = await emitirPedido(supabase, id).catch((e) => ({ erro: e.message }))
+  revalidarCliente(pedido.cliente_id)
+  return resultado
 }

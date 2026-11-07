@@ -47,6 +47,28 @@ export default function PedidoNota() {
           </select>
         </label>
       </div>
+      <details>
+        <summary>Serviço feito em obra? Informe o endereço da obra</summary>
+        <p className="vazio">Obrigatório para concretagem e outros serviços de construção: o ISS é devido na cidade da obra.</p>
+        <div className="duas">
+          <label>
+            CEP da obra
+            <input name="obra_cep" inputMode="numeric" placeholder="00000-000" />
+          </label>
+          <label>
+            Rua / avenida
+            <input name="obra_logradouro" />
+          </label>
+          <label>
+            Número
+            <input name="obra_numero" placeholder="S/N" />
+          </label>
+          <label>
+            Bairro
+            <input name="obra_bairro" />
+          </label>
+        </div>
+      </details>
       <label>
         Observações (opcional)
         <textarea name="observacoes" rows={2} placeholder="Número do contrato, pedido de compra, dados bancários na nota..." />

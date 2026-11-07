@@ -24,6 +24,15 @@ Página institucional + **Área do Cliente**, onde cada cliente entra com e-mail
 
 O administrador (você) entra pelo mesmo login e cai na página `/admin`, onde cadastra clientes, envia documentos e acompanha as cobranças.
 
+### Nota fiscal automática (NFS-e pelo Emissor Nacional)
+
+- O cliente pede a nota na Área do Cliente (tomador, descrição, valor e, se for serviço em obra, o endereço da obra).
+- O site escolhe o **código de serviço** comparando a descrição com as notas anteriores do próprio cliente e repete o código usado. Se não houver nota parecida, ou se a descrição servir para mais de um serviço, o pedido fica em **Escolher o serviço** no painel do escritório.
+- O escritório clica em **Emitir NFS-e** (ou liga "Emitir sozinho" no cliente). O site monta a DPS, assina com o **certificado A1 do cliente** e envia direto à API gratuita do Emissor Nacional. XML e PDF vão para os documentos do cliente e a nota entra na prévia de impostos.
+- Na página do cliente, em **Nota fiscal automática**: regime, alíquota aproximada do Simples, certificado A1 (.pfx + senha, guardada cifrada), serviços com código nacional/NBS e o botão **Buscar notas anteriores no Emissor Nacional**, que importa as notas já emitidas (inclusive as feitas à mão no gov.br) e cadastra os códigos usados.
+- Comece cada cliente em **Homologação** (nota de teste, sem valor fiscal) e só passe para **Produção** depois de uma nota de teste dar certo.
+- Para rodar: `supabase/005_nfse.sql` no Supabase e a variável `NFSE_CHAVE_CERTIFICADOS` na Vercel.
+
 ## Como funciona
 
 | Parte | Serviço | Custo |
@@ -41,7 +50,7 @@ Ao cadastrar um cliente com honorário, o site cria o cliente no Asaas e uma ass
 
 ### 1. Supabase
 1. Crie uma conta em https://supabase.com e um projeto novo (região São Paulo).
-2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos), com `supabase/003_primeiro_acesso.sql` (bloqueia os dados enquanto o cliente não troca a senha inicial) e com `supabase/004_area_cliente.sql` (pedidos de nota, notas emitidas, envio de arquivos pelo cliente e anexo do Simples).
+2. No menu **SQL Editor**, cole o conteúdo de `supabase/schema.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/002_ficha_cadastral.sql` (ficha da empresa, sócios e tipo/validade dos documentos), com `supabase/003_primeiro_acesso.sql` (bloqueia os dados enquanto o cliente não troca a senha inicial) e com `supabase/004_area_cliente.sql` (pedidos de nota, notas emitidas, envio de arquivos pelo cliente e anexo do Simples) e com `supabase/005_nfse.sql` (emissão automática de NFS-e).
 3. Em **Authentication > Users > Add user**, crie o seu usuário de administrador com o e-mail que vai em `ADMIN_EMAIL`.
 4. Em **Project Settings > API**, copie a *Project URL*, a chave *anon* e a chave *service_role*.
 

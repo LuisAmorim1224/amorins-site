@@ -17,8 +17,11 @@ export default async function Admin() {
   const { data: pendentes } = await supabase
     .from('pedidos_nota')
     .select('*, clientes(nome)')
-    .eq('status', 'pendente')
+    .in('status', ['pendente', 'escolher_servico', 'erro'])
     .order('criado_em')
+  const { data: listaServicos } = await supabase.from('servicos_nota').select('*').order('nome')
+  const servicos = {}
+  for (const s of listaServicos || []) (servicos[s.cliente_id] ||= []).push(s)
 
   return (
     <>
@@ -26,7 +29,7 @@ export default async function Admin() {
       <main className="painel">
         <div className="caixa">
           <h2>Notas fiscais para emitir {pendentes?.length ? `(${pendentes.length})` : ''}</h2>
-          <ListaPedidos pedidos={pendentes || []} acoes={AcoesPedido} mostrarCliente />
+          <ListaPedidos pedidos={pendentes || []} acoes={AcoesPedido} servicos={servicos} mostrarCliente />
         </div>
         <h1>Clientes</h1>
         <div className="caixa">
