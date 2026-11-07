@@ -31,7 +31,7 @@ O administrador (você) entra pelo mesmo login e cai na página `/admin`, onde c
 - O escritório clica em **Emitir NFS-e** (ou liga "Emitir sozinho" no cliente). O site monta a DPS, assina com o **certificado A1 do cliente** e envia direto à API gratuita do Emissor Nacional. XML e PDF vão para os documentos do cliente e a nota entra na prévia de impostos.
 - Na página do cliente, em **Nota fiscal automática**: regime, alíquota aproximada do Simples, certificado A1 (.pfx + senha, guardada cifrada), serviços com código nacional/NBS e o botão **Buscar notas anteriores no Emissor Nacional**, que importa as notas já emitidas (inclusive as feitas à mão no gov.br) e cadastra os códigos usados.
 - Comece cada cliente em **Homologação** (nota de teste, sem valor fiscal) e só passe para **Produção** depois de uma nota de teste dar certo.
-- Para rodar: `supabase/005_nfse.sql` no Supabase e a variável `NFSE_CHAVE_CERTIFICADOS` na Vercel.
+- Para rodar: `supabase/005_nfse.sql` no Supabase. A variável `NFSE_CHAVE_CERTIFICADOS` na Vercel é opcional (sem ela, a senha do certificado é cifrada com a chave secreta do Supabase).
 
 ## Como funciona
 
