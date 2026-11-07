@@ -7,10 +7,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
 import AcoesPedido from './AcoesPedido'
 import NovoCliente from './NovoCliente'
+import AtualizarNotas from './AtualizarNotas'
 import { aprovarRecomendacao, excluirRecomendacao } from './acoes'
 import { assinatura } from '@/lib/recomendacoes'
 
 export const metadata = { title: 'Administração · Amorins Contábil' }
+export const maxDuration = 300
 
 export default async function Admin() {
   await exigirAdmin()
@@ -38,6 +40,10 @@ export default async function Admin() {
         <div className="caixa">
           <h2>Notas fiscais para emitir {pendentes?.length ? `(${pendentes.length})` : ''}</h2>
           <ListaPedidos pedidos={pendentes || []} acoes={AcoesPedido} servicos={servicos} mostrarCliente />
+        </div>
+        <div className="caixa">
+          <h2>Notas emitidas pelos clientes</h2>
+          <AtualizarNotas />
         </div>
         <div className="caixa">
           <h2>Recomendações do site {recomendacoes?.some((r) => !r.aprovado) ? `(${recomendacoes.filter((r) => !r.aprovado).length} para revisar)` : ''}</h2>
