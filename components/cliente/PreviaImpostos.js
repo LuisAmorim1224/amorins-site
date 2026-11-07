@@ -4,9 +4,10 @@ import { previaMei, previaSimples, somarMeses, somarPorMes } from '@/lib/simples
 const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const pct = (v) => `${(v * 100).toFixed(2).replace('.', ',')}%`
 
-function GraficoMeses({ notas, mesAtual }) {
+function GraficoMeses({ notas, mesAtual, ano }) {
   const porMes = somarPorMes(notas)
-  const meses = Array.from({ length: 12 }, (_, i) => somarMeses(mesAtual, i - 11))
+  // Com `ano`: janeiro a dezembro daquele ano; sem: os últimos 12 meses.
+  const meses = Array.from({ length: 12 }, (_, i) => (ano ? `${ano}-${String(i + 1).padStart(2, '0')}` : somarMeses(mesAtual, i - 11)))
   const maior = Math.max(1, ...meses.map((m) => porMes[m] || 0))
   return (
     <div className="grafico-meses" role="img" aria-label="Faturamento dos últimos 12 meses">
@@ -16,6 +17,47 @@ function GraficoMeses({ notas, mesAtual }) {
           <div key={m} className="barra-mes" title={`${m}: ${reais(valor)}`}>
             <div className="coluna" style={{ height: `${Math.max(2, (valor / maior) * 100)}%` }} />
             <span>{MESES_CURTOS[Number(m.slice(5)) - 1]}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function PreviaSimples({ notas, notasRbt12, anexo, mesAtual, dataAbertura }) {
+  const p = previaSimples({ notas, notasRbt12, anexo, competencia: mesAtual, dataAbertura })
+  if (p.erro) return <p className="vazio">{p.erro}</p>
+  if (p.foraDoLimite) return <p className="aviso">{p.aviso} Fale com o escritório.</p>
+  return (
+    <div className="grade-previa">
+      <div><span className="rotulo">Faturamento do mês</span><strong>{reais(p.receitaMes)}</strong></div>
+      <div><span className="rotulo">Últimos 12 meses (RBT12)</span><strong>{reais(p.rbt12)}</strong></div>
+      <div><span className="rotulo">Alíquota efetiva</span><strong>{pct(p.aliquotaEfetiva)}</strong><span className="detalhe">{p.nomeAnexo}, faixa {p.faixa}</span></div>
+      <div className="destaque"><span className="rotulo">DAS estimado do mês</span><strong>{reais(p.das)}</strong></div>
+    </div>
+  )
+}
+
+// Só para o escritório: notas do ano separadas pelo anexo do código de serviço (`nota.anexo`).
+// O RBT12 é o da empresa toda; cada anexo paga o DAS só sobre a própria receita do mês.
+export function ComparacaoAnexos({ cliente, notas, hoje, anexos = ['III', 'IV'] }) {
+  const mesAtual = hoje.slice(0, 7)
+  const ano = hoje.slice(0, 4)
+  return (
+    <div className="comparacao-anexos">
+      {anexos.map((anexo) => {
+        const doAnexo = notas.filter((n) => n.anexo === anexo)
+        const doAno = doAnexo.filter((n) => String(n.data_emissao).startsWith(`${ano}-`))
+        const total = doAno.reduce((t, n) => t + Number(n.valor), 0)
+        return (
+          <div key={anexo} className="previa">
+            <h3>Anexo {anexo}</h3>
+            <p className="vazio pequeno">
+              {doAno.length ? `${doAno.length} nota${doAno.length > 1 ? 's' : ''} em ${ano} · ${reais(total)}` : `Nenhuma nota neste anexo em ${ano}.`}
+            </p>
+            <GraficoMeses notas={doAno} ano={ano} />
+            <PreviaSimples notas={doAnexo} notasRbt12={notas} anexo={anexo} mesAtual={mesAtual} dataAbertura={cliente.data_abertura} />
+            {anexo === 'IV' && <p className="vazio pequeno">No Anexo IV a CPP (20% sobre a folha e pró-labore) é paga à parte, fora do DAS.</p>}
           </div>
         )
       })}
@@ -47,18 +89,7 @@ export default function PreviaImpostos({ cliente, notas, hoje }) {
       </>
     )
   } else if (regime === 'Simples Nacional') {
-    const p = previaSimples({ notas, anexo: cliente.anexo_simples, competencia: mesAtual, dataAbertura: cliente.data_abertura })
-    if (p.erro) conteudo = <p className="vazio">{p.erro}</p>
-    else if (p.foraDoLimite) conteudo = <p className="aviso">{p.aviso} Fale com o escritório.</p>
-    else
-      conteudo = (
-        <div className="grade-previa">
-          <div><span className="rotulo">Faturamento do mês</span><strong>{reais(p.receitaMes)}</strong></div>
-          <div><span className="rotulo">Últimos 12 meses (RBT12)</span><strong>{reais(p.rbt12)}</strong></div>
-          <div><span className="rotulo">Alíquota efetiva</span><strong>{pct(p.aliquotaEfetiva)}</strong><span className="detalhe">{p.nomeAnexo}, faixa {p.faixa}</span></div>
-          <div className="destaque"><span className="rotulo">DAS estimado do mês</span><strong>{reais(p.das)}</strong></div>
-        </div>
-      )
+    conteudo = <PreviaSimples notas={notas} anexo={cliente.anexo_simples} mesAtual={mesAtual} dataAbertura={cliente.data_abertura} />
   } else {
     conteudo = <p className="vazio">O regime tributário da sua empresa ainda não foi informado pelo escritório.</p>
   }
