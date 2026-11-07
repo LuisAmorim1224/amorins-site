@@ -1,9 +1,12 @@
+import { clientesPublicos } from '@/lib/clientes-atendidos'
 import { EMAIL, linkWhatsapp, TELEFONE, YOUTUBE } from '@/lib/contato'
 
 // Fundo da página inicial: 'fundo-grade' (tecnológico escuro), 'fundo-dados' (gráficos) ou 'fundo-claro'.
 const FUNDO = 'fundo-grade'
 
 const WHATS_REGULARIZAR = linkWhatsapp('Olá! Quero regularizar meu CNPJ. Pode me ajudar?')
+const WHATS_PERICIA = linkWhatsapp('Olá! Preciso de um cálculo judicial/trabalhista ou de perícia contábil. Pode me ajudar?')
+const CLIENTES = clientesPublicos()
 
 export default function Inicio() {
   return (
@@ -17,6 +20,7 @@ export default function Inicio() {
           <nav>
             <a href="#regularizacao">Regularização de CNPJ</a>
             <a href="#servicos">Serviços</a>
+            <a href="#clientes">Clientes</a>
             <a href="#historia">Quem sou</a>
             <a href="#contato">Contato</a>
             <a href="/login" className="btn-area">Área do Cliente</a>
@@ -115,7 +119,10 @@ export default function Inicio() {
         <div className="conteudo">
           <p className="rotulo">Serviços</p>
           <h2>Contabilidade completa para cada fase da sua empresa</h2>
-          <p className="intro">Do MEI que está começando à empresa que precisa de planejamento tributário.</p>
+          <p className="intro">
+            Empresas de todos os portes, do MEI que está começando à empresa que precisa de planejamento
+            tributário, além de cálculos e perícia contábil para processos judiciais.
+          </p>
           <div className="grid-servicos">
             <div className="card-servico principal">
               <h3>Regularização de CNPJ</h3>
@@ -156,11 +163,58 @@ export default function Inicio() {
                 <li>Planejamento financeiro</li>
               </ul>
             </div>
+            <div className="card-servico">
+              <h3>Cálculos e perícia contábil</h3>
+              <ul>
+                <li>Cálculos judiciais e liquidação de sentença</li>
+                <li>Atualização monetária e juros de débitos</li>
+                <li>Cálculos trabalhistas: rescisão, horas extras e verbas</li>
+                <li>Perícia contábil judicial e extrajudicial</li>
+                <li>Assistente técnico, laudos e pareceres</li>
+              </ul>
+            </div>
+          </div>
+          <div className="faixa-pericia">
+            <div>
+              <h3>Cálculos judiciais, trabalhistas e perícia contábil</h3>
+              <p>
+                Para advogados, empresas e pessoas físicas: cálculos com memória detalhada, laudos e
+                pareceres técnicos assinados por contador registrado no CRC-BA.
+              </p>
+            </div>
+            <a href={WHATS_PERICIA} className="botao-primario" target="_blank" rel="noreferrer">
+              Solicitar orçamento
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="secao" id="historia">
+      <section className="secao" id="clientes">
+        <div className="conteudo">
+          <p className="rotulo">Clientes atendidos</p>
+          <h2>Empresas que já contam com a Amorins Contábil</h2>
+          <p className="intro">
+            Do comércio à prestação de serviços, do MEI à empresa no Simples Nacional: alguns dos negócios
+            que eu acompanho de perto.
+          </p>
+          <div className="grid-clientes">
+            {CLIENTES.map((c, i) => (
+              <div className="card-cliente" key={i}>
+                {c.logo ? (
+                  <img className="logo-cliente" src={c.logo} alt={`Logo ${c.nome}`} />
+                ) : (
+                  <span className="inicial-cliente" aria-hidden="true">{(c.nome || c.segmento).charAt(0)}</span>
+                )}
+                <h3>{c.nome || c.segmento}</h3>
+                <p className="segmento">{c.nome ? `${c.segmento} · ${c.cidade}` : c.cidade}</p>
+                <p>{c.trabalho}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="secao branca" id="historia">
         <div className="conteudo historia">
           <aside className="perfil">
             <img className="foto" src="/luis-amorim.jpg" alt="Luis Amorim, contador da Amorins Contábil" width={160} height={160} />

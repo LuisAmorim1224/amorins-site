@@ -81,7 +81,7 @@ a { color: var(--azul); }
 .destaque-cnpj .problemas span { background: #fff4e5; color: #8a4b00; border-radius: 999px; padding: 6px 12px; font-size: 0.88em; }
 .secao .botao-secundario.escuro { color: var(--azul); border-color: var(--azul); }
 
-.grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; }
 .card-servico { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 24px; }
 .card-servico.principal { border: 2px solid var(--azul-vivo); position: relative; }
 .card-servico.principal::before { content: 'Carro-chefe'; position: absolute; top: -12px; left: 20px; background: var(--azul-vivo); color: #fff; font-size: 0.75em; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
@@ -219,3 +219,17 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
   .formulario .duas { grid-template-columns: 1fr; }
   .submenu { justify-content: flex-start; }
 }
+
+/* Faixa de cálculos e perícia */
+.faixa-pericia { margin-top: 22px; background: linear-gradient(135deg, #0b2a6b, #123d99); color: #fff; border-radius: 16px; padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.faixa-pericia h3 { font-size: 1.15em; margin-bottom: 4px; }
+.faixa-pericia p { color: #c9d8f5; max-width: 640px; }
+
+/* Clientes atendidos */
+.grid-clientes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.card-cliente { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 22px; }
+.card-cliente .inicial-cliente { width: 48px; height: 48px; border-radius: 12px; background: #eaf1ff; color: var(--azul-vivo); display: grid; place-items: center; font-weight: 700; font-size: 1.2em; margin-bottom: 12px; }
+.card-cliente .logo-cliente { height: 48px; max-width: 140px; object-fit: contain; margin-bottom: 12px; }
+.card-cliente h3 { color: #0b1f4d; font-size: 1.05em; margin-bottom: 2px; }
+.card-cliente .segmento { color: var(--azul-vivo); font-size: 0.85em; font-weight: 600; margin-bottom: 8px; }
+.card-cliente p { color: var(--texto-suave); font-size: 0.93em; }
