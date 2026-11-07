@@ -62,7 +62,12 @@ export default function NotaAutomatica({ cliente, servicos, notasAnteriores }) {
 
   return (
     <div className="formulario">
-      <form action={acaoConfig} className="formulario">
+      {/* key: refaz o formulário quando os dados salvos mudam; sem isso o React volta os campos ao valor antigo. */}
+      <form
+        action={acaoConfig}
+        className="formulario"
+        key={[cliente.nfse_ativa, cliente.nfse_emissao_automatica, cliente.nfse_ambiente, cliente.nfse_op_simples, cliente.nfse_aliquota_sn, cliente.nfse_municipio, cliente.nfse_inscricao_municipal, cliente.nfse_serie].join('|')}
+      >
         <input type="hidden" name="id" value={cliente.id} />
         <label>
           <input type="checkbox" name="ativa" defaultChecked={cliente.nfse_ativa} /> Emitir as notas deste cliente pelo portal
