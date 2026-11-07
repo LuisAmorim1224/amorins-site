@@ -15,6 +15,8 @@ export default function AcoesPedido({ pedido, servicos = [] }) {
       {servicos.length > 0 && (
         <form action={acaoNfse} className="formulario">
           <input type="hidden" name="id" value={pedido.id} />
+          {/* Campo escondido: o React não manda o name/value do botão clicado junto com o formulário. */}
+          <input type="hidden" name="emitir" value="sim" />
           <label>
             {pedido.status === 'escolher_servico' ? 'Qual código de serviço usar nesta nota?' : 'Serviço da nota'}
             <select name="servico_id" defaultValue={pedido.servico_id || ''} required>
@@ -28,7 +30,7 @@ export default function AcoesPedido({ pedido, servicos = [] }) {
               ))}
             </select>
           </label>
-          <button name="emitir" value="sim" disabled={emitindo}>
+          <button disabled={emitindo}>
             {emitindo ? 'Emitindo no Emissor Nacional...' : pedido.status === 'erro' ? 'Tentar emitir de novo' : 'Emitir NFS-e'}
           </button>
           {estadoNfse.erro && <p className="erro">{estadoNfse.erro}</p>}

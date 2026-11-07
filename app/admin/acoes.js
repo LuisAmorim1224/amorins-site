@@ -530,7 +530,7 @@ export async function escolherServicoEEmitir(_estado, formData) {
       atualizado_em: new Date().toISOString(),
     })
     .eq('id', id)
-  let resultado = { ok: `Serviço definido: ${servico.nome}.` }
+  let resultado = { ok: `Serviço definido: ${servico.nome.replace(/\.+$/, '')}.` }
   if (formData.get('emitir') === 'sim') resultado = await emitirPedido(supabase, id).catch((e) => ({ erro: e.message }))
   revalidarCliente(pedido.cliente_id)
   return resultado
