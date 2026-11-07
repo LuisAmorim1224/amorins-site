@@ -8,6 +8,7 @@ import { exigirAdmin } from '@/lib/auth'
 import { listarDocumentos } from '@/lib/documentos'
 import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
 import { reais } from '@/lib/formato'
+import { anexoDoServico } from '@/lib/simples'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
 import { excluirDocumento, excluirNotaEmitida } from '../../acoes'
@@ -16,7 +17,7 @@ import CobrancaAvulsa from './CobrancaAvulsa'
 import { precisaTrocarSenha } from '@/lib/auth'
 import { cnpjDoEmailDeLogin, ehEmailDeLogin } from '@/lib/login'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
-import PreviaImpostos from '@/components/cliente/PreviaImpostos'
+import PreviaImpostos, { ComparacaoAnexos } from '@/components/cliente/PreviaImpostos'
 import { dataBR } from '@/lib/formato'
 import AcoesPedido from '../../AcoesPedido'
 import AcessoCliente from './AcessoCliente'
@@ -42,6 +43,18 @@ export default async function Cliente({ params }) {
     .select('id', { count: 'exact', head: true })
     .eq('cliente_id', id)
   const { data: notas } = await supabase.from('notas_emitidas').select('*').eq('cliente_id', id).order('data_emissao', { ascending: false }).limit(500)
+  // Anexo de cada nota pelo código de serviço guardado no histórico (por chave de acesso ou número).
+  const { data: historico } = await supabase.from('historico_notas').select('chave_acesso, numero, cod_trib_nac').eq('cliente_id', id).limit(2000)
+  const semZeros = (n) => String(n || '').replace(/^0+/, '')
+  const codPorChave = new Map((historico || []).filter((h) => h.chave_acesso).map((h) => [h.chave_acesso, h.cod_trib_nac]))
+  const codPorNumero = new Map((historico || []).filter((h) => h.numero).map((h) => [semZeros(h.numero), h.cod_trib_nac]))
+  const notasComAnexo = (notas || []).map((n) => ({
+    ...n,
+    anexo: anexoDoServico(codPorChave.get(n.chave_acesso) || codPorNumero.get(semZeros(n.numero)), cliente.anexo_simples),
+  }))
+  const anoAtual = isoDe(hojeNaBahia()).slice(0, 4)
+  const notasDoAno = (notas || []).filter((n) => String(n.data_emissao).startsWith(`${anoAtual}-`))
+  const notasAnterioresAoAno = (notas || []).length - notasDoAno.length
   const pendencias = [
     ...(cliente.pendencias || []),
     ...pendenciasAutomaticas({ cliente, socios: socios || [], documentos, hoje: isoDe(hojeNaBahia()) }),
@@ -99,10 +112,20 @@ export default async function Cliente({ params }) {
         </div>
         <div className="caixa">
           <h2>Notas emitidas e prévia de impostos</h2>
-          <PreviaImpostos cliente={cliente} notas={notas || []} hoje={isoDe(hojeNaBahia())} />
-          {notas?.length ? (
+          {cliente.regime_tributario === 'Simples Nacional' && ['III', 'IV'].includes(cliente.anexo_simples) ? (
+            <ComparacaoAnexos cliente={cliente} notas={notasComAnexo} hoje={isoDe(hojeNaBahia())} />
+          ) : (
+            <PreviaImpostos cliente={cliente} notas={notas || []} hoje={isoDe(hojeNaBahia())} />
+          )}
+          {notasAnterioresAoAno > 0 && (
+            <p className="vazio pequeno">
+              Mostrando as notas de {anoAtual}. {notasAnterioresAoAno} nota{notasAnterioresAoAno > 1 ? 's' : ''} de anos anteriores
+              ficam guardadas e entram só no cálculo dos últimos 12 meses.
+            </p>
+          )}
+          {notasDoAno.length ? (
             <ul className="lista">
-              {notas.map((n) => (
+              {notasDoAno.map((n) => (
                 <li key={n.id}>
                   <div>
                     <strong>{reais(n.valor)}</strong> · {dataBR(n.data_emissao)}
@@ -119,7 +142,7 @@ export default async function Cliente({ params }) {
               ))}
             </ul>
           ) : (
-            <p className="vazio">Nenhuma nota lançada.</p>
+            <p className="vazio">Nenhuma nota lançada em {anoAtual}.</p>
           )}
         </div>
         <div className="caixa">
