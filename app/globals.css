@@ -225,11 +225,19 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
 .faixa-pericia h3 { font-size: 1.15em; margin-bottom: 4px; }
 .faixa-pericia p { color: #c9d8f5; max-width: 640px; }
 
-/* Clientes atendidos */
-.grid-clientes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-.card-cliente { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 22px; }
-.card-cliente .inicial-cliente { width: 48px; height: 48px; border-radius: 12px; background: #eaf1ff; color: var(--azul-vivo); display: grid; place-items: center; font-weight: 700; font-size: 1.2em; margin-bottom: 12px; }
-.card-cliente .logo-cliente { height: 48px; max-width: 140px; object-fit: contain; margin-bottom: 12px; }
-.card-cliente h3 { color: #0b1f4d; font-size: 1.05em; margin-bottom: 2px; }
-.card-cliente .segmento { color: var(--azul-vivo); font-size: 0.85em; font-weight: 600; margin-bottom: 8px; }
-.card-cliente p { color: var(--texto-suave); font-size: 0.93em; }
+/* Recomendações */
+.grid-recomendacoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.card-recomendacao { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 22px; display: grid; gap: 10px; align-content: start; }
+.card-recomendacao .estrelas { color: #f5a623; letter-spacing: 2px; }
+.card-recomendacao blockquote { color: #2b3550; white-space: pre-line; }
+.card-recomendacao figcaption { color: var(--azul-vivo); font-weight: 600; font-size: 0.9em; }
+.caixa-recomendacao { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 26px; max-width: 760px; }
+.form-recomendacao { display: grid; gap: 14px; }
+.form-recomendacao label { display: grid; gap: 6px; font-weight: 600; color: #0b1f4d; font-size: 0.95em; }
+.form-recomendacao .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-recomendacao .autorizo { display: flex; gap: 10px; align-items: flex-start; font-weight: normal; color: var(--texto-suave); }
+.form-recomendacao .autorizo input { margin-top: 4px; }
+.form-recomendacao .armadilha { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.form-recomendacao button { justify-self: start; border: none; cursor: pointer; }
+.recomendacao-enviada { color: #2e7d32; font-weight: 600; }
+@media (max-width: 640px) { .form-recomendacao .duas { grid-template-columns: 1fr; } }

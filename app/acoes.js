@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ehAdmin, getUsuario, precisaTrocarSenha } from '@/lib/auth'
 import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha } from '@/lib/login'
+import { validarRecomendacao } from '@/lib/recomendacoes'
 
 export async function entrar(_estado, formData) {
   const supabase = await createClient()
@@ -65,4 +66,18 @@ export async function definirSenhaPrimeiroAcesso(_estado, formData) {
   const { error: erroLogin } = await supabase.auth.signInWithPassword({ email: user.email, password: senha })
   if (erroLogin) redirect('/login')
   redirect('/cliente')
+}
+
+// Recomendação deixada no site por quem já foi atendido. Fica guardada até o escritório aprovar.
+export async function enviarRecomendacao(_estado, formData) {
+  const { erro, robo, registro } = validarRecomendacao(Object.fromEntries(formData))
+  if (erro) return { erro }
+  const ok = { ok: 'Obrigado pela recomendação! Ela aparece no site depois de revisada.' }
+  if (robo) return ok
+  const { error } = await createAdminClient().from('recomendacoes').insert(registro)
+  if (error) {
+    console.error('Erro ao salvar recomendação:', error)
+    return { erro: 'Não foi possível enviar agora. Tente de novo em instantes ou mande pelo WhatsApp.' }
+  }
+  return ok
 }

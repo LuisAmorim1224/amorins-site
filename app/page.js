@@ -1,4 +1,6 @@
-import { clientesPublicos } from '@/lib/clientes-atendidos'
+import FormRecomendacao from '@/components/site/FormRecomendacao'
+import { assinatura } from '@/lib/recomendacoes'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { EMAIL, linkWhatsapp, TELEFONE, YOUTUBE } from '@/lib/contato'
 
 // Fundo da página inicial: 'fundo-grade' (tecnológico escuro), 'fundo-dados' (gráficos) ou 'fundo-claro'.
@@ -6,9 +8,29 @@ const FUNDO = 'fundo-grade'
 
 const WHATS_REGULARIZAR = linkWhatsapp('Olá! Quero regularizar meu CNPJ. Pode me ajudar?')
 const WHATS_PERICIA = linkWhatsapp('Olá! Preciso de um cálculo judicial/trabalhista ou de perícia contábil. Pode me ajudar?')
-const CLIENTES = clientesPublicos()
 
-export default function Inicio() {
+// A página é refeita a cada 5 minutos (e na hora em que o escritório aprova uma recomendação).
+export const revalidate = 300
+
+async function recomendacoesAprovadas() {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('recomendacoes')
+      .select('id, nome, empresa, cidade, texto, nota')
+      .eq('aprovado', true)
+      .order('criado_em', { ascending: false })
+      .limit(9)
+    if (error) throw error
+    return data || []
+  } catch (erro) {
+    // Sem banco (ex.: no build) ou tabela ainda não criada: a seção mostra só o formulário.
+    console.error('Recomendações indisponíveis:', erro?.message || erro)
+    return []
+  }
+}
+
+export default async function Inicio() {
+  const recomendacoes = await recomendacoesAprovadas()
   return (
     <>
       <header className="site-topo">
@@ -20,7 +42,7 @@ export default function Inicio() {
           <nav>
             <a href="#regularizacao">Regularização de CNPJ</a>
             <a href="#servicos">Serviços</a>
-            <a href="#clientes">Clientes</a>
+            <a href="#recomendacoes">Recomendações</a>
             <a href="#historia">Quem sou</a>
             <a href="#contato">Contato</a>
             <a href="/login" className="btn-area">Área do Cliente</a>
@@ -189,27 +211,27 @@ export default function Inicio() {
         </div>
       </section>
 
-      <section className="secao" id="clientes">
+      <section className="secao" id="recomendacoes">
         <div className="conteudo">
-          <p className="rotulo">Clientes atendidos</p>
-          <h2>Empresas que já contam com a Amorins Contábil</h2>
+          <p className="rotulo">Recomendações</p>
+          <h2>Já foi atendido? Deixe sua recomendação</h2>
           <p className="intro">
-            Do comércio à prestação de serviços, do MEI à empresa no Simples Nacional: alguns dos negócios
-            que eu acompanho de perto.
+            Sua opinião ajuda outros empreendedores a encontrar um contador de confiança. A recomendação
+            aparece aqui depois de revisada.
           </p>
-          <div className="grid-clientes">
-            {CLIENTES.map((c, i) => (
-              <div className="card-cliente" key={i}>
-                {c.logo ? (
-                  <img className="logo-cliente" src={c.logo} alt={`Logo ${c.nome}`} />
-                ) : (
-                  <span className="inicial-cliente" aria-hidden="true">{(c.nome || c.segmento).charAt(0)}</span>
-                )}
-                <h3>{c.nome || c.segmento}</h3>
-                <p className="segmento">{c.nome ? `${c.segmento} · ${c.cidade}` : c.cidade}</p>
-                <p>{c.trabalho}</p>
-              </div>
-            ))}
+          {recomendacoes.length > 0 && (
+            <div className="grid-recomendacoes">
+              {recomendacoes.map((r) => (
+                <figure className="card-recomendacao" key={r.id}>
+                  {r.nota && <span className="estrelas" aria-label={`Nota ${r.nota} de 5`}>{'★'.repeat(r.nota)}{'☆'.repeat(5 - r.nota)}</span>}
+                  <blockquote>{r.texto}</blockquote>
+                  <figcaption>{assinatura(r)}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
+          <div className="caixa-recomendacao">
+            <FormRecomendacao />
           </div>
         </div>
       </section>
