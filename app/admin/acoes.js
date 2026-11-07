@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { criarAssinatura, criarClienteAsaas } from '@/lib/asaas'
+import { criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
 import { exigirAdmin } from '@/lib/auth'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { DIA_VENCIMENTO } from '@/lib/vencimento'
+import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
 import { emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
@@ -78,12 +78,15 @@ export async function cadastrarCliente(_estado, formData) {
   redirect(`/admin/clientes/${cliente.id}`)
 }
 
+async function garantirClienteAsaas(supabase, cliente) {
+  if (cliente.asaas_customer_id) return cliente.asaas_customer_id
+  const customerId = (await criarClienteAsaas(cliente)).id
+  await supabase.from('clientes').update({ asaas_customer_id: customerId }).eq('id', cliente.id)
+  return customerId
+}
+
 async function ativarCobranca(supabase, cliente) {
-  let customerId = cliente.asaas_customer_id
-  if (!customerId) {
-    customerId = (await criarClienteAsaas(cliente)).id
-    await supabase.from('clientes').update({ asaas_customer_id: customerId }).eq('id', cliente.id)
-  }
+  const customerId = await garantirClienteAsaas(supabase, cliente)
   const assinatura = await criarAssinatura({
     customerId,
     valor: cliente.valor_honorario,
@@ -120,6 +123,34 @@ export async function ativarCobrancaMensal(_estado, formData) {
   revalidatePath(`/admin/clientes/${id}`)
   revalidatePath('/admin')
   return { ok: `Cobrança ativada: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} todo dia ${DIA_VENCIMENTO}.` }
+}
+
+// Cobrança avulsa (mês em atraso, serviço extra). Também só sai com confirmação.
+export async function gerarCobrancaAvulsa(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const valor = Number(String(formData.get('valor') || '').replace(/\./g, '').replace(',', '.'))
+  const vencimento = String(formData.get('vencimento') || '')
+  const descricao = String(formData.get('descricao') || '').trim() || 'Honorários contábeis - Amorins Contábil'
+  if (!(valor > 0)) return { erro: 'Informe o valor da cobrança.' }
+  const { ano, mes, dia } = hojeNaBahia()
+  const hoje = `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(vencimento) || vencimento < hoje) {
+    return { erro: 'O vencimento precisa ser hoje ou uma data futura.' }
+  }
+  if (formData.get('confirmo') !== 'sim') return { erro: 'Marque a confirmação antes de gerar a cobrança.' }
+
+  const supabase = createAdminClient()
+  const { data: cliente } = await supabase.from('clientes').select('*').eq('id', id).single()
+  if (!cliente) return { erro: 'Cliente não encontrado.' }
+  try {
+    const customerId = await garantirClienteAsaas(supabase, cliente)
+    await criarCobrancaAvulsa({ customerId, valor, vencimento, descricao })
+  } catch (e) {
+    return { erro: `O Asaas recusou a cobrança: ${e.message}` }
+  }
+  revalidatePath(`/admin/clientes/${id}`)
+  return { ok: 'Cobrança gerada. O Asaas avisa o cliente por e-mail.' }
 }
 
 // Gera uma autorização de envio: o navegador manda o arquivo direto para o Supabase,

@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
 import { excluirDocumento, excluirNotaEmitida } from '../../acoes'
 import AtivarCobranca from './AtivarCobranca'
+import CobrancaAvulsa from './CobrancaAvulsa'
 import { precisaTrocarSenha } from '@/lib/auth'
 import { cnpjDoEmailDeLogin, ehEmailDeLogin } from '@/lib/login'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
@@ -135,6 +136,10 @@ export default async function Cliente({ params }) {
             <AtivarCobranca clienteId={id} valorAtual={cliente.valor_honorario} />
           )}
           <Cobrancas cobrancas={cobrancas} erro={erroCobrancas} />
+          <details style={{ marginTop: 16 }}>
+            <summary>Gerar cobrança avulsa (mês em atraso, serviço extra)</summary>
+            <CobrancaAvulsa clienteId={id} valorSugerido={cliente.valor_honorario} />
+          </details>
         </div>
       </main>
     </>
