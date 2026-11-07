@@ -11,7 +11,8 @@ import { reais } from '@/lib/formato'
 import { anexoDoServico } from '@/lib/simples'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
-import { excluirDocumento, excluirNotaEmitida } from '../../acoes'
+import { excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio } from '../../acoes'
+import PedidoNota from '@/components/cliente/PedidoNota'
 import AtivarCobranca from './AtivarCobranca'
 import CobrancaAvulsa from './CobrancaAvulsa'
 import { precisaTrocarSenha } from '@/lib/auth'
@@ -108,6 +109,10 @@ export default async function Cliente({ params }) {
         </div>
         <div className="caixa">
           <h2>Pedidos de nota fiscal</h2>
+          <details>
+            <summary>Novo pedido de nota (pelo escritório)</summary>
+            <PedidoNota acaoServidor={pedirNotaPeloEscritorio} clienteId={id} servicos={servicos || []} />
+          </details>
           <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} />
         </div>
         <div className="caixa">
