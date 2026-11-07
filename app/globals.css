@@ -81,7 +81,7 @@ a { color: var(--azul); }
 .destaque-cnpj .problemas span { background: #fff4e5; color: #8a4b00; border-radius: 999px; padding: 6px 12px; font-size: 0.88em; }
 .secao .botao-secundario.escuro { color: var(--azul); border-color: var(--azul); }
 
-.grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; }
 .card-servico { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 24px; }
 .card-servico.principal { border: 2px solid var(--azul-vivo); position: relative; }
 .card-servico.principal::before { content: 'Carro-chefe'; position: absolute; top: -12px; left: 20px; background: var(--azul-vivo); color: #fff; font-size: 0.75em; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
@@ -219,3 +219,25 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
   .formulario .duas { grid-template-columns: 1fr; }
   .submenu { justify-content: flex-start; }
 }
+
+/* Faixa de cálculos e perícia */
+.faixa-pericia { margin-top: 22px; background: linear-gradient(135deg, #0b2a6b, #123d99); color: #fff; border-radius: 16px; padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.faixa-pericia h3 { font-size: 1.15em; margin-bottom: 4px; }
+.faixa-pericia p { color: #c9d8f5; max-width: 640px; }
+
+/* Recomendações */
+.grid-recomendacoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.card-recomendacao { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 22px; display: grid; gap: 10px; align-content: start; }
+.card-recomendacao .estrelas { color: #f5a623; letter-spacing: 2px; }
+.card-recomendacao blockquote { color: #2b3550; white-space: pre-line; }
+.card-recomendacao figcaption { color: var(--azul-vivo); font-weight: 600; font-size: 0.9em; }
+.caixa-recomendacao { background: #fff; border: 1px solid #e3e9f6; border-radius: 16px; padding: 26px; max-width: 760px; }
+.form-recomendacao { display: grid; gap: 14px; }
+.form-recomendacao label { display: grid; gap: 6px; font-weight: 600; color: #0b1f4d; font-size: 0.95em; }
+.form-recomendacao .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-recomendacao .autorizo { display: flex; gap: 10px; align-items: flex-start; font-weight: normal; color: var(--texto-suave); }
+.form-recomendacao .autorizo input { margin-top: 4px; }
+.form-recomendacao .armadilha { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.form-recomendacao button { justify-self: start; border: none; cursor: pointer; }
+.recomendacao-enviada { color: #2e7d32; font-weight: 600; }
+@media (max-width: 640px) { .form-recomendacao .duas { grid-template-columns: 1fr; } }

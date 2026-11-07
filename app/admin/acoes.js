@@ -496,3 +496,17 @@ export async function escolherServicoEEmitir(_estado, formData) {
   revalidarCliente(pedido.cliente_id)
   return resultado
 }
+
+export async function aprovarRecomendacao(formData) {
+  await exigirAdmin()
+  await createAdminClient().from('recomendacoes').update({ aprovado: true }).eq('id', formData.get('id'))
+  revalidatePath('/admin')
+  revalidatePath('/')
+}
+
+export async function excluirRecomendacao(formData) {
+  await exigirAdmin()
+  await createAdminClient().from('recomendacoes').delete().eq('id', formData.get('id'))
+  revalidatePath('/admin')
+  revalidatePath('/')
+}

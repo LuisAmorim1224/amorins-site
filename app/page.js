@@ -1,11 +1,36 @@
+import FormRecomendacao from '@/components/site/FormRecomendacao'
+import { assinatura } from '@/lib/recomendacoes'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { EMAIL, linkWhatsapp, TELEFONE, YOUTUBE } from '@/lib/contato'
 
 // Fundo da página inicial: 'fundo-grade' (tecnológico escuro), 'fundo-dados' (gráficos) ou 'fundo-claro'.
 const FUNDO = 'fundo-grade'
 
 const WHATS_REGULARIZAR = linkWhatsapp('Olá! Quero regularizar meu CNPJ. Pode me ajudar?')
+const WHATS_PERICIA = linkWhatsapp('Olá! Preciso de um cálculo judicial/trabalhista ou de perícia contábil. Pode me ajudar?')
 
-export default function Inicio() {
+// A página é refeita a cada 5 minutos (e na hora em que o escritório aprova uma recomendação).
+export const revalidate = 300
+
+async function recomendacoesAprovadas() {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('recomendacoes')
+      .select('id, nome, empresa, cidade, texto, nota')
+      .eq('aprovado', true)
+      .order('criado_em', { ascending: false })
+      .limit(9)
+    if (error) throw error
+    return data || []
+  } catch (erro) {
+    // Sem banco (ex.: no build) ou tabela ainda não criada: a seção mostra só o formulário.
+    console.error('Recomendações indisponíveis:', erro?.message || erro)
+    return []
+  }
+}
+
+export default async function Inicio() {
+  const recomendacoes = await recomendacoesAprovadas()
   return (
     <>
       <header className="site-topo">
@@ -17,6 +42,7 @@ export default function Inicio() {
           <nav>
             <a href="#regularizacao">Regularização de CNPJ</a>
             <a href="#servicos">Serviços</a>
+            <a href="#recomendacoes">Recomendações</a>
             <a href="#historia">Quem sou</a>
             <a href="#contato">Contato</a>
             <a href="/login" className="btn-area">Área do Cliente</a>
@@ -115,7 +141,10 @@ export default function Inicio() {
         <div className="conteudo">
           <p className="rotulo">Serviços</p>
           <h2>Contabilidade completa para cada fase da sua empresa</h2>
-          <p className="intro">Do MEI que está começando à empresa que precisa de planejamento tributário.</p>
+          <p className="intro">
+            Empresas de todos os portes, do MEI que está começando à empresa que precisa de planejamento
+            tributário, além de cálculos e perícia contábil para processos judiciais.
+          </p>
           <div className="grid-servicos">
             <div className="card-servico principal">
               <h3>Regularização de CNPJ</h3>
@@ -156,11 +185,58 @@ export default function Inicio() {
                 <li>Planejamento financeiro</li>
               </ul>
             </div>
+            <div className="card-servico">
+              <h3>Cálculos e perícia contábil</h3>
+              <ul>
+                <li>Cálculos judiciais e liquidação de sentença</li>
+                <li>Atualização monetária e juros de débitos</li>
+                <li>Cálculos trabalhistas: rescisão, horas extras e verbas</li>
+                <li>Perícia contábil judicial e extrajudicial</li>
+                <li>Assistente técnico, laudos e pareceres</li>
+              </ul>
+            </div>
+          </div>
+          <div className="faixa-pericia">
+            <div>
+              <h3>Cálculos judiciais, trabalhistas e perícia contábil</h3>
+              <p>
+                Para advogados, empresas e pessoas físicas: cálculos com memória detalhada, laudos e
+                pareceres técnicos assinados por contador registrado no CRC-BA.
+              </p>
+            </div>
+            <a href={WHATS_PERICIA} className="botao-primario" target="_blank" rel="noreferrer">
+              Solicitar orçamento
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="secao" id="historia">
+      <section className="secao" id="recomendacoes">
+        <div className="conteudo">
+          <p className="rotulo">Recomendações</p>
+          <h2>Já foi atendido? Deixe sua recomendação</h2>
+          <p className="intro">
+            Sua opinião ajuda outros empreendedores a encontrar um contador de confiança. A recomendação
+            aparece aqui depois de revisada.
+          </p>
+          {recomendacoes.length > 0 && (
+            <div className="grid-recomendacoes">
+              {recomendacoes.map((r) => (
+                <figure className="card-recomendacao" key={r.id}>
+                  {r.nota && <span className="estrelas" aria-label={`Nota ${r.nota} de 5`}>{'★'.repeat(r.nota)}{'☆'.repeat(5 - r.nota)}</span>}
+                  <blockquote>{r.texto}</blockquote>
+                  <figcaption>{assinatura(r)}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
+          <div className="caixa-recomendacao">
+            <FormRecomendacao />
+          </div>
+        </div>
+      </section>
+
+      <section className="secao branca" id="historia">
         <div className="conteudo historia">
           <aside className="perfil">
             <img className="foto" src="/luis-amorim.jpg" alt="Luis Amorim, contador da Amorins Contábil" width={160} height={160} />
