@@ -25,14 +25,6 @@ export default function NovoCliente() {
           <input name="telefone" inputMode="tel" placeholder="71999999999" />
         </label>
         <label>
-          Honorário mensal (R$)
-          <input name="valor" inputMode="decimal" placeholder="300,00" />
-        </label>
-        <label>
-          Dia do vencimento
-          <input type="number" name="dia" min={1} max={28} defaultValue={5} />
-        </label>
-        <label>
           Senha inicial (só para CPF)
           <input name="senha" minLength={8} autoComplete="off" />
         </label>
@@ -40,7 +32,8 @@ export default function NovoCliente() {
       <p className="vazio">
         Com CNPJ, o cliente entra com o próprio CNPJ e a senha inicial são os 6 primeiros números
         dele; no primeiro acesso ele é obrigado a criar uma senha nova. Com CPF, informe e-mail e
-        senha. Honorário em branco = sem cobrança automática.
+        senha. A cobrança mensal (vencimento todo dia 5) é ativada depois, na página do cliente,
+        quando o valor do honorário estiver definido.
       </p>
       {estado.erro && <p className="erro">{estado.erro}</p>}
       <div>

@@ -9,6 +9,7 @@ import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { DIA_VENCIMENTO } from '@/lib/vencimento'
 import { emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
@@ -20,14 +21,9 @@ export async function cadastrarCliente(_estado, formData) {
     email: String(formData.get('email') || '').trim().toLowerCase(),
     cpf_cnpj: somenteNumeros(formData.get('cpf_cnpj')),
     telefone: somenteNumeros(formData.get('telefone')) || null,
-    valor_honorario: Number(String(formData.get('valor') || '0').replace(',', '.')) || null,
-    dia_vencimento: Number(formData.get('dia')) || null,
   }
   if (!dados.nome) return { erro: 'Preencha o nome ou razão social.' }
   if (![11, 14].includes(dados.cpf_cnpj.length)) return { erro: 'Informe um CPF (11 números) ou CNPJ (14 números).' }
-  if (dados.valor_honorario && !(dados.dia_vencimento >= 1 && dados.dia_vencimento <= 28)) {
-    return { erro: 'O dia de vencimento precisa ser entre 1 e 28.' }
-  }
 
   // CNPJ: o cliente entra com o próprio CNPJ e a senha inicial são os 6 primeiros dígitos,
   // trocada obrigatoriamente no primeiro acesso. O e-mail vira só contato (opcional).
@@ -79,17 +75,6 @@ export async function cadastrarCliente(_estado, formData) {
     }
   }
 
-  if (cliente.valor_honorario) {
-    try {
-      await ativarCobranca(supabase, cliente)
-    } catch (e) {
-      revalidatePath('/admin')
-      return {
-        erro: `O cliente foi cadastrado, mas a cobrança no Asaas falhou: ${e.message} Abra o cliente para tentar de novo.`,
-      }
-    }
-  }
-
   redirect(`/admin/clientes/${cliente.id}`)
 }
 
@@ -102,20 +87,39 @@ async function ativarCobranca(supabase, cliente) {
   const assinatura = await criarAssinatura({
     customerId,
     valor: cliente.valor_honorario,
-    diaVencimento: cliente.dia_vencimento,
+    diaVencimento: DIA_VENCIMENTO,
   })
   await supabase.from('clientes').update({ asaas_subscription_id: assinatura.id }).eq('id', cliente.id)
 }
 
-export async function tentarCobrancaDeNovo(formData) {
+// A cobrança nunca começa sozinha: o escritório define o valor de cada cliente e confirma
+// aqui. O vencimento é sempre no dia 5.
+export async function ativarCobrancaMensal(_estado, formData) {
   await exigirAdmin()
   const id = String(formData.get('id'))
+  const valor = Number(String(formData.get('valor') || '').replace(/\./g, '').replace(',', '.'))
+  if (!(valor > 0)) return { erro: 'Informe o valor do honorário mensal.' }
+  if (formData.get('confirmo') !== 'sim') return { erro: 'Marque a confirmação antes de ativar a cobrança.' }
+
   const supabase = createAdminClient()
   const { data: cliente } = await supabase.from('clientes').select('*').eq('id', id).single()
-  if (cliente && cliente.valor_honorario && !cliente.asaas_subscription_id) {
-    await ativarCobranca(supabase, cliente)
+  if (!cliente) return { erro: 'Cliente não encontrado.' }
+  if (cliente.asaas_subscription_id) return { erro: 'A cobrança deste cliente já está ativa.' }
+
+  const atualizado = { ...cliente, valor_honorario: valor, dia_vencimento: DIA_VENCIMENTO }
+  await supabase
+    .from('clientes')
+    .update({ valor_honorario: valor, dia_vencimento: DIA_VENCIMENTO })
+    .eq('id', id)
+  try {
+    await ativarCobranca(supabase, atualizado)
+  } catch (e) {
+    revalidatePath(`/admin/clientes/${id}`)
+    return { erro: `O Asaas recusou a cobrança: ${e.message}` }
   }
   revalidatePath(`/admin/clientes/${id}`)
+  revalidatePath('/admin')
+  return { ok: `Cobrança ativada: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} todo dia ${DIA_VENCIMENTO}.` }
 }
 
 // Gera uma autorização de envio: o navegador manda o arquivo direto para o Supabase,

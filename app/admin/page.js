@@ -87,12 +87,9 @@ export default async function Admin() {
                     </div>
                   </div>
                   <div className="info">
-                    {c.valor_honorario
+                    {c.asaas_subscription_id
                       ? `${reais(c.valor_honorario)} todo dia ${c.dia_vencimento}`
-                      : 'Sem cobrança automática'}
-                    {c.valor_honorario && !c.asaas_subscription_id && (
-                      <span className="erro"> · cobrança pendente</span>
-                    )}
+                      : 'Cobrança não ativada'}
                   </div>
                 </li>
               ))}
