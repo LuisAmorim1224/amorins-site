@@ -500,7 +500,10 @@ export async function buscarNotasAnteriores(_estado, formData) {
   try {
     const r = await importarNotasAnteriores(createAdminClient(), id)
     revalidarCliente(id)
-    return { ok: `${r.notas} nota(s) anteriores importadas${r.servicosNovos ? `, ${r.servicosNovos} serviço(s) novo(s) cadastrado(s) — confira os códigos` : ''}.` }
+    const detalhe = r.notas
+      ? ''
+      : ` O Emissor Nacional (${r.ambiente === 'producao' ? 'produção' : 'homologação'}) devolveu ${r.documentos} documento(s), ${r.nfse} nota(s)${r.comoTomador ? `, ${r.comoTomador} em que o cliente é tomador` : ''}. Notas emitidas no sistema da prefeitura antes do Emissor Nacional não aparecem aqui.`
+    return { ok: `${r.notas} nota(s) anteriores importadas${r.servicosNovos ? `, ${r.servicosNovos} serviço(s) novo(s) cadastrado(s) — confira os códigos` : ''}.${detalhe}` }
   } catch (e) {
     return { erro: e.message }
   }
