@@ -3,11 +3,32 @@
 import { useActionState } from 'react'
 import { pedirNota } from '@/app/cliente/acoes'
 
-export default function PedidoNota() {
-  const [estado, acao, enviando] = useActionState(pedirNota, {})
+const codigo = (c) => `${c.slice(0, 2)}.${c.slice(2, 4)}.${c.slice(4, 6)}`
+
+// Pedido de nota. No /admin o escritório usa o mesmo formulário com `acaoServidor`, `clienteId` e `servicos`.
+export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servicos }) {
+  const [estado, acao, enviando] = useActionState(acaoServidor, {})
+  const peloEscritorio = Boolean(clienteId)
   return (
     <form action={acao} className="formulario" key={estado.ok || 'pedido'}>
-      <p className="vazio">Preencha os dados da nota que você precisa. O escritório confere e emite para você.</p>
+      {peloEscritorio ? (
+        <input type="hidden" name="cliente_id" value={clienteId} />
+      ) : (
+        <p className="vazio">Preencha os dados da nota que você precisa. O escritório confere e emite para você.</p>
+      )}
+      {peloEscritorio && servicos?.length > 0 && (
+        <label>
+          Serviço da nota
+          <select name="servico_id" defaultValue="">
+            <option value="">Sugerir pelas notas anteriores</option>
+            {servicos.map((s) => (
+              <option key={s.id} value={s.id}>
+                {codigo(s.cod_trib_nac)} · {s.nome}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="duas">
         <label>
           CPF ou CNPJ de quem vai receber a nota
@@ -76,7 +97,7 @@ export default function PedidoNota() {
       {estado.erro && <p className="erro">{estado.erro}</p>}
       {estado.ok && <p className="ok">{estado.ok}</p>}
       <div>
-        <button disabled={enviando}>{enviando ? 'Enviando...' : 'Enviar pedido de nota'}</button>
+        <button disabled={enviando}>{enviando ? 'Enviando...' : peloEscritorio ? 'Criar pedido' : 'Enviar pedido de nota'}</button>
       </div>
     </form>
   )

@@ -11,6 +11,7 @@ import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
 import { emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
+import { criarPedido } from '@/lib/pedidos'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
 
@@ -547,4 +548,18 @@ export async function excluirRecomendacao(formData) {
   await createAdminClient().from('recomendacoes').delete().eq('id', formData.get('id'))
   revalidatePath('/admin')
   revalidatePath('/')
+}
+
+// Pedido de nota criado pelo escritório (sem o cliente entrar no portal). Não emite sozinho:
+// o pedido aparece na lista com o botão "Emitir NFS-e".
+export async function pedirNotaPeloEscritorio(_estado, formData) {
+  await exigirAdmin()
+  const clienteId = String(formData.get('cliente_id') || '')
+  if (!clienteId) return { erro: 'Cliente não informado.' }
+  const r = await criarPedido(createAdminClient(), clienteId, formData, { servicoId: String(formData.get('servico_id') || '') || undefined })
+  if (r.erro) return { erro: r.erro }
+  revalidatePath('/admin')
+  revalidatePath(`/admin/clientes/${clienteId}`)
+  revalidatePath('/cliente')
+  return { ok: 'Pedido criado. Ele aparece em "Pedidos de nota fiscal" com o botão Emitir NFS-e.' }
 }
