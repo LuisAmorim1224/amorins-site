@@ -10,7 +10,7 @@ import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
-import { atualizarNotasDeTodos, emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
+import { atualizarNotasDeTodos, conferirCodigosNoMunicipio, emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 import { criarPedido } from '@/lib/pedidos'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
@@ -582,4 +582,14 @@ function resumoAtualizacao(r) {
   if (r.vencidos.length) partes.push(`certificado vencido: ${r.vencidos.join(', ')}`)
   if (r.semCertificado.length) partes.push(`sem certificado: ${r.semCertificado.join(', ')}`)
   return `${partes.join('. ')}.`
+}
+
+export async function conferirCodigos(_estado, formData) {
+  await exigirAdmin()
+  try {
+    const linhas = await conferirCodigosNoMunicipio(createAdminClient(), String(formData.get('id')))
+    return { linhas }
+  } catch (e) {
+    return { erro: e.message }
+  }
 }

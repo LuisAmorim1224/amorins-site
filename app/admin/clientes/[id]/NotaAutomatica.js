@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { buscarNotasAnteriores, enviarCertificado, excluirServico, salvarConfigNfse, salvarServico } from '../../acoes'
+import { buscarNotasAnteriores, conferirCodigos, enviarCertificado, excluirServico, salvarConfigNfse, salvarServico } from '../../acoes'
 
 const codigo = (c) => `${c.slice(0, 2)}.${c.slice(2, 4)}.${c.slice(4, 6)}`
 const Mensagem = ({ estado }) => (
@@ -58,6 +58,7 @@ export default function NotaAutomatica({ cliente, servicos, notasAnteriores }) {
   const [estadoConfig, acaoConfig, salvandoConfig] = useActionState(salvarConfigNfse, {})
   const [estadoCert, acaoCert, enviandoCert] = useActionState(enviarCertificado, {})
   const [estadoHist, acaoHist, buscando] = useActionState(buscarNotasAnteriores, {})
+  const [estadoCod, acaoCod, conferindo] = useActionState(conferirCodigos, {})
   const certVencido = cliente.certificado_validade && cliente.certificado_validade < new Date().toISOString().slice(0, 10)
 
   return (
@@ -168,6 +169,22 @@ export default function NotaAutomatica({ cliente, servicos, notasAnteriores }) {
           </button>
         </div>
         <Mensagem estado={estadoHist} />
+      </form>
+      <form action={acaoCod} className="formulario">
+        <input type="hidden" name="id" value={cliente.id} />
+        <div>
+          <button disabled={conferindo || !cliente.certificado_caminho}>
+            {conferindo ? 'Conferindo...' : 'Conferir se o município aceita estes códigos'}
+          </button>
+        </div>
+        <Mensagem estado={estadoCod} />
+        {estadoCod.linhas && (
+          <ul className="vazio pequeno">
+            {estadoCod.linhas.map((l) => (
+              <li key={l}>{l}</li>
+            ))}
+          </ul>
+        )}
       </form>
     </div>
   )
