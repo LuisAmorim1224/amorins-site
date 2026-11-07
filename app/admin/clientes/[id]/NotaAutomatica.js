@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { buscarNotasAnteriores, conferirCodigos, enviarCertificado, excluirServico, salvarConfigNfse, salvarServico } from '../../acoes'
+import { buscarNotasAnteriores, conferirCodigos, criarServicoDoCnae, enviarCertificado, excluirServico, salvarConfigNfse, salvarServico } from '../../acoes'
 
 const codigo = (c) => `${c.slice(0, 2)}.${c.slice(2, 4)}.${c.slice(4, 6)}`
 const Mensagem = ({ estado }) => (
@@ -58,7 +58,8 @@ function Servico({ clienteId, servico }) {
   )
 }
 
-export default function NotaAutomatica({ cliente, servicos, notasAnteriores }) {
+export default function NotaAutomatica({ cliente, servicos, notasAnteriores, cnaes = [] }) {
+  const cadastrados = new Set(servicos.map((s) => s.cod_trib_nac))
   const [estadoConfig, acaoConfig, salvandoConfig] = useActionState(salvarConfigNfse, {})
   const [estadoCert, acaoCert, enviandoCert] = useActionState(enviarCertificado, {})
   const [estadoHist, acaoHist, buscando] = useActionState(buscarNotasAnteriores, {})
@@ -143,6 +144,47 @@ export default function NotaAutomatica({ cliente, servicos, notasAnteriores }) {
         </div>
         <Mensagem estado={estadoCert} />
       </form>
+
+      <h3>CNAE do cartão do CNPJ → código do Emissor Nacional</h3>
+      <p className="vazio">
+        O CNAE não é o código da nota. Cada CNAE corresponde a um código de tributação nacional; a nota sai com o código do serviço
+        cadastrado abaixo.
+      </p>
+      {cnaes.length ? (
+        <ul className="lista">
+          {cnaes.map((c) => (
+            <li key={c.cnae}>
+              <div>
+                <strong>{c.cnae}</strong> {c.descricao} {c.principal ? '(principal)' : ''}
+                <div className="info">
+                  {c.sugestoes.map((s) => (
+                    <span key={s.cod}>
+                      → {s.codigo} {s.nome}
+                      {s.notas ? ` · usado em ${s.notas} nota(s)` : s.confirmado ? ' · aceito pelo Emissor Nacional' : ' · confirmar'}
+                      {cadastrados.has(s.cod) ? ' · cadastrado' : ''}{' '}
+                    </span>
+                  ))}
+                  {c.semIss && '→ sem NFS-e de serviço. '}
+                  {c.obs}
+                </div>
+              </div>
+              {c.sugestoes
+                .filter((s) => !cadastrados.has(s.cod))
+                .map((s) => (
+                  <form key={s.cod} action={criarServicoDoCnae}>
+                    <input type="hidden" name="cliente_id" value={cliente.id} />
+                    <input type="hidden" name="cod" value={s.cod} />
+                    <input type="hidden" name="nome" value={s.nome} />
+                    <input type="hidden" name="palavras" value={c.descricao} />
+                    <button>Cadastrar {s.codigo}</button>
+                  </form>
+                ))}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="vazio">Sem CNAE na ficha. Atualize a ficha pela Receita para ver a correspondência.</p>
+      )}
 
       <h3>Serviços que o cliente fatura</h3>
       <p className="vazio">
