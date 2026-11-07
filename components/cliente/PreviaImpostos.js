@@ -38,14 +38,17 @@ function PreviaSimples({ notas, notasRbt12, anexo, mesAtual, dataAbertura }) {
   )
 }
 
-// Só para o escritório: notas do ano separadas pelo anexo do código de serviço (`nota.anexo`).
+// Só para o escritório: notas do ano separadas (um quadro por anexo com nota no ano) pelo anexo do código de serviço (`nota.anexo`).
 // O RBT12 é o da empresa toda; cada anexo paga o DAS só sobre a própria receita do mês.
 export function ComparacaoAnexos({ cliente, notas, hoje, anexos = ['III', 'IV'] }) {
   const mesAtual = hoje.slice(0, 7)
   const ano = hoje.slice(0, 4)
+  // Só mostra o anexo que teve nota no ano (sem nenhuma nota, mostra o primeiro).
+  const comNotas = anexos.filter((a) => notas.some((n) => n.anexo === a && String(n.data_emissao).startsWith(`${ano}-`)))
+  const visiveis = comNotas.length ? comNotas : anexos.slice(0, 1)
   return (
     <div className="comparacao-anexos">
-      {anexos.map((anexo) => {
+      {visiveis.map((anexo) => {
         const doAnexo = notas.filter((n) => n.anexo === anexo)
         const doAno = doAnexo.filter((n) => String(n.data_emissao).startsWith(`${ano}-`))
         const total = doAno.reduce((t, n) => t + Number(n.valor), 0)
