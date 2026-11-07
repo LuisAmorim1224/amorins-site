@@ -20,6 +20,7 @@ import AcoesPedido from '../../AcoesPedido'
 import AcessoCliente from './AcessoCliente'
 import AcoesFicha from './AcoesFicha'
 import EnviarDocumentos from './EnviarDocumentos'
+import NotaAutomatica from './NotaAutomatica'
 
 export default async function Cliente({ params }) {
   await exigirAdmin()
@@ -33,6 +34,11 @@ export default async function Cliente({ params }) {
   const documentos = await listarDocumentos(supabase, id)
   const { data: socios } = await supabase.from('socios').select('*').eq('cliente_id', id).order('criado_em')
   const { data: pedidos } = await supabase.from('pedidos_nota').select('*').eq('cliente_id', id).order('criado_em', { ascending: false }).limit(50)
+  const { data: servicos } = await supabase.from('servicos_nota').select('*').eq('cliente_id', id).order('nome')
+  const { count: notasAnteriores } = await supabase
+    .from('historico_notas')
+    .select('id', { count: 'exact', head: true })
+    .eq('cliente_id', id)
   const { data: notas } = await supabase.from('notas_emitidas').select('*').eq('cliente_id', id).order('data_emissao', { ascending: false }).limit(500)
   const pendencias = [
     ...(cliente.pendencias || []),
@@ -82,8 +88,12 @@ export default async function Cliente({ params }) {
           />
         </div>
         <div className="caixa">
+          <h2>Nota fiscal automática (Emissor Nacional)</h2>
+          <NotaAutomatica cliente={cliente} servicos={servicos || []} notasAnteriores={notasAnteriores || 0} />
+        </div>
+        <div className="caixa">
           <h2>Pedidos de nota fiscal</h2>
-          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} />
+          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} />
         </div>
         <div className="caixa">
           <h2>Notas emitidas e prévia de impostos</h2>
