@@ -18,7 +18,11 @@ const EM_ABERTO = ['pendente', 'escolher_servico', 'erro']
 const documento = (d) => (String(d).length === 14 ? formatarCnpj(d) : formatarCpf(d))
 
 // Lista de pedidos de nota. Com `acoes`, mostra os botões do escritório (admin).
-export default function ListaPedidos({ pedidos, acoes: Acoes, mostrarCliente, servicos = {} }) {
+// Arquivos da nota emitida (PDF/XML) entre os documentos do cliente, pelo número da nota.
+const arquivosDaNota = (documentos, numero) =>
+  numero ? documentos.filter((d) => new RegExp(`NFS-e ${numero}\\.(pdf|xml)$`, 'i').test(d.nome)) : []
+
+export default function ListaPedidos({ pedidos, acoes: Acoes, mostrarCliente, servicos = {}, documentos = [] }) {
   if (!pedidos?.length) return <p className="vazio">Nenhum pedido de nota ainda.</p>
   return (
     <ul className="lista pedidos">
@@ -43,6 +47,15 @@ export default function ListaPedidos({ pedidos, acoes: Acoes, mostrarCliente, se
               {p.obra_cep && (
                 <div className="info">
                   Obra: {[p.obra_logradouro, p.obra_numero, p.obra_bairro].filter(Boolean).join(', ')} · CEP {p.obra_cep}
+                </div>
+              )}
+              {p.status === 'emitida' && arquivosDaNota(documentos, p.numero_nota).length > 0 && (
+                <div className="info">
+                  {arquivosDaNota(documentos, p.numero_nota).map((d) => (
+                    <a key={d.nome} href={d.url} style={{ marginRight: 12 }}>
+                      {d.nome.toLowerCase().endsWith('.pdf') ? 'Ver espelho (PDF)' : 'XML'}
+                    </a>
+                  ))}
                 </div>
               )}
               {p.resposta && <div className="info">Escritório: {p.resposta}</div>}
