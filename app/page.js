@@ -63,7 +63,7 @@ export default async function Inicio() {
             </p>
             <div className="acoes">
               <a href="/login" className="botao-primario">Acessar Área do Cliente →</a>
-              <a href={WHATS_REGULARIZAR} className="botao-secundario" target="_blank" rel="noreferrer">
+              <a href="/regularizar" className="botao-secundario">
                 Regularizar meu CNPJ
               </a>
             </div>
@@ -111,8 +111,11 @@ export default async function Inicio() {
               <span>MEI desenquadrado</span>
             </div>
             <div className="acoes" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <a href={WHATS_REGULARIZAR} className="botao-primario" target="_blank" rel="noreferrer">
-                Quero regularizar meu CNPJ
+              <a href="/regularizar" className="botao-primario">
+                Diagnóstico grátis do meu CNPJ
+              </a>
+              <a href={WHATS_REGULARIZAR} className="botao-secundario escuro" target="_blank" rel="noreferrer">
+                Falar no WhatsApp
               </a>
             </div>
           </div>

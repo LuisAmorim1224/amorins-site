@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Biblioteca da NFS-e usa arquivos próprios (schemas, fontes do PDF): roda sem empacotar.
-  serverExternalPackages: ['open-nfse', 'pdfkit'],
+  // Bibliotecas com arquivos próprios (schemas, fontes, leitor de PDF): rodam sem empacotar.
+  serverExternalPackages: ['open-nfse', 'pdfkit', 'unpdf'],
   // O validador do XML da nota carrega este arquivo em tempo de execução; a Vercel precisa levá-lo junto.
   outputFileTracingIncludes: {
     '/**': ['./node_modules/xmllint-wasm/xmllint.wasm'],

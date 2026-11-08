@@ -22,6 +22,16 @@ Página institucional + **Área do Cliente**, onde cada cliente entra com e-mail
 - Cada documento enviado tem **tipo** (Cartão CNPJ, contrato social, documento pessoal...) e **validade** opcional.
 - O site aponta sozinho as pendências: documentos que faltam, documentos vencidos ou vencendo em 30 dias, situação cadastral diferente de ATIVA.
 
+### Diagnóstico de CNPJ (página /regularizar)
+
+- O botão **Regularizar meu CNPJ** leva para `/regularizar`. O visitante digita o CNPJ e vê na hora um **diagnóstico parcial** com os dados públicos da Receita (BrasilAPI): situação cadastral e motivo, MEI/Simples (inclusive exclusões), atividade e alertas. Nada é gravado nesse passo.
+- Para o **diagnóstico completo**, ele deixa nome, WhatsApp e o aceite da LGPD. O pedido aparece no `/admin` em **Diagnósticos de CNPJ** e o visitante recebe um link próprio com o passo a passo da **procuração eletrônica no e-CAC** para o CNPJ do escritório.
+- Com o **Integra Contador (Serpro)** configurado, o próprio visitante clica em **Já fiz a procuração** e o site puxa o **Relatório de Situação Fiscal** (SITFIS), guarda o PDF na pasta privada `diagnosticos`, resume as pendências (declarações em atraso, débitos, dívida ativa, parcelamentos, processos) e mostra o valor. Cada visitante tem no máximo 5 tentativas (cada uma é uma consulta paga ao Serpro).
+- **Valor:** vem da tabela **Preços da regularização** no `/admin`. Só aparece quando todos os tipos de pendência encontrados têm preço; senão o visitante vê que o contador vai mandar o orçamento, e você define o valor no pedido.
+- Sem o Integra Contador configurado, o fluxo funciona do mesmo jeito até a procuração e o visitante avisa pelo WhatsApp; você puxa o relatório no e-CAC.
+- Para rodar: `supabase/007_diagnosticos.sql` no Supabase.
+- Para ligar a consulta automática: contrate o Integra Contador na loja do Serpro com o CNPJ do escritório e cadastre na Vercel `SERPRO_CONSUMER_KEY`, `SERPRO_CONSUMER_SECRET`, `SERPRO_CERTIFICADO_PFX_BASE64` (o e-CNPJ A1 do escritório em base64) e `SERPRO_CERTIFICADO_SENHA`.
+
 O administrador (você) entra pelo mesmo login e cai na página `/admin`, onde cadastra clientes, envia documentos e acompanha as cobranças.
 
 ### Nota fiscal automática (NFS-e pelo Emissor Nacional)
