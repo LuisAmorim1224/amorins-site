@@ -505,7 +505,7 @@ export async function buscarNotasAnteriores(_estado, formData) {
     const detalhe = r.notas
       ? ''
       : ` O Emissor Nacional devolveu ${r.documentos} documento(s), ${r.nfse} nota(s)${r.comoTomador ? `, ${r.comoTomador} em que o cliente é tomador` : ''}. Notas emitidas no sistema da prefeitura antes do Emissor Nacional não aparecem aqui.`
-    return { ok: `${r.notas} nota(s) anteriores importadas e lançadas no gráfico dos meses${r.arquivos ? `, ${r.arquivos} com PDF e XML salvos para baixar` : ''}${r.canceladas ? ` (${r.canceladas} cancelada(s) ignorada(s))` : ''}${r.servicosNovos ? `, ${r.servicosNovos} serviço(s) novo(s) cadastrado(s) — confira os códigos` : ''}.${detalhe}` }
+    return { ok: `${r.notas} nota(s) anteriores importadas e lançadas no gráfico dos meses${r.arquivos ? `, ${r.arquivos} com PDF e XML salvos para baixar` : ''}${r.faltamPdfs ? ` (faltam ${r.faltamPdfs} PDF(s): clique de novo para continuar)` : ''}${r.canceladas ? ` (${r.canceladas} cancelada(s) ignorada(s))` : ''}${r.servicosNovos ? `, ${r.servicosNovos} serviço(s) novo(s) cadastrado(s) — confira os códigos` : ''}.${detalhe}` }
   } catch (e) {
     return { erro: e.message }
   }
