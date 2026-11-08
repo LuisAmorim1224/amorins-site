@@ -14,6 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
 import { excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio } from '../../acoes'
 import PedidoNota from '@/components/cliente/PedidoNota'
+import LinksNota from '@/components/cliente/LinksNota'
 import AtivarCobranca from './AtivarCobranca'
 import CobrancaAvulsa from './CobrancaAvulsa'
 import { precisaTrocarSenha } from '@/lib/auth'
@@ -26,6 +27,9 @@ import AcessoCliente from './AcessoCliente'
 import AcoesFicha from './AcoesFicha'
 import EnviarDocumentos from './EnviarDocumentos'
 import NotaAutomatica from './NotaAutomatica'
+
+// Arquivos das notas aparecem só na lista de notas (com o botão de baixar), não em Documentos.
+const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.caminho_arquivo, n.caminho_xml]).filter(Boolean))
 
 export default async function Cliente({ params }) {
   await exigirAdmin()
@@ -117,7 +121,7 @@ export default async function Cliente({ params }) {
             <summary>Novo pedido de nota (pelo escritório)</summary>
             <PedidoNota acaoServidor={pedirNotaPeloEscritorio} clienteId={id} servicos={servicos || []} />
           </details>
-          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} documentos={documentos} />
+          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} />
         </div>
         <div className="caixa">
           <h2>Notas emitidas e prévia de impostos</h2>
@@ -142,6 +146,7 @@ export default async function Cliente({ params }) {
                       {n.numero ? `Nota nº ${n.numero}` : 'Sem número'}
                       {n.tomador && ` · ${n.tomador}`} · lançada pelo {n.lancada_por === 'escritorio' ? 'escritório' : 'cliente'}
                     </div>
+                    <LinksNota nota={n} documentos={documentos} />
                   </div>
                   <form action={excluirNotaEmitida}>
                     <input type="hidden" name="id" value={n.id} />
@@ -160,7 +165,7 @@ export default async function Cliente({ params }) {
         </div>
         <div className="caixa">
           <h2>Documentos do cliente</h2>
-          <Documentos documentos={documentos} excluir={excluirDocumento} />
+          <Documentos documentos={documentos.filter((d) => !caminhosDeNotas(notas).has(d.caminho))} excluir={excluirDocumento} />
         </div>
         <div className="caixa">
           <h2>Cobranças</h2>
