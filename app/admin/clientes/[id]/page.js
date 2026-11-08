@@ -117,7 +117,7 @@ export default async function Cliente({ params }) {
             <summary>Novo pedido de nota (pelo escritório)</summary>
             <PedidoNota acaoServidor={pedirNotaPeloEscritorio} clienteId={id} servicos={servicos || []} />
           </details>
-          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} />
+          <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} documentos={documentos} />
         </div>
         <div className="caixa">
           <h2>Notas emitidas e prévia de impostos</h2>
