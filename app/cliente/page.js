@@ -21,6 +21,9 @@ import { hojeNaBahia } from '@/lib/vencimento'
 
 export const metadata = { title: 'Área do Cliente · Amorins Contábil' }
 
+// Arquivos das notas aparecem só na lista de notas (com o botão de baixar), não em Documentos.
+const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.caminho_arquivo, n.caminho_xml]).filter(Boolean))
+
 export default async function AreaDoCliente() {
   const user = await getUsuario()
   if (!user) redirect('/login')
@@ -104,19 +107,19 @@ export default async function AreaDoCliente() {
           <h2>Pedir nota fiscal</h2>
           <PedidoNota />
           <h3 className="subtitulo">Seus pedidos</h3>
-          <ListaPedidos pedidos={pedidos || []} documentos={documentos} />
+          <ListaPedidos pedidos={pedidos || []} />
         </div>
 
         <div className="caixa" id="impostos">
           <h2>Faturamento e prévia de impostos</h2>
           {cliente && <PreviaImpostos cliente={cliente} notas={notas || []} hoje={hoje} />}
           <h3 className="subtitulo">Notas emitidas</h3>
-          <NotasEmitidas notas={notas || []} />
+          <NotasEmitidas notas={notas || []} documentos={documentos} />
         </div>
 
         <div className="caixa" id="documentos">
           <h2>Seus documentos</h2>
-          <DocumentosPorPasta documentos={documentos} />
+          <DocumentosPorPasta documentos={documentos.filter((d) => !caminhosDeNotas(notas).has(d.caminho))} />
         </div>
 
         <div className="caixa" id="enviar">

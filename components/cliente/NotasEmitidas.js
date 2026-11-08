@@ -4,8 +4,9 @@ import { useState, useTransition } from 'react'
 import { excluirNotaLancada, lancarNota } from '@/app/cliente/acoes'
 import { enviarArquivoDoCliente } from '@/components/cliente/EnviarParaEscritorio'
 import { dataBR, reais } from '@/lib/formato'
+import LinksNota from '@/components/cliente/LinksNota'
 
-export default function NotasEmitidas({ notas }) {
+export default function NotasEmitidas({ notas, documentos = [] }) {
   const [mensagem, setMensagem] = useState(null)
   const [salvando, iniciar] = useTransition()
 
@@ -73,6 +74,7 @@ export default function NotasEmitidas({ notas }) {
                   {n.tomador && ` · ${n.tomador}`}
                   {n.lancada_por === 'escritorio' ? ' · emitida pelo escritório' : ' · lançada por você'}
                 </div>
+                <LinksNota nota={n} documentos={documentos} />
               </div>
               {n.lancada_por === 'cliente' && (
                 <form action={excluirNotaLancada}>
