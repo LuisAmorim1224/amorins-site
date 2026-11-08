@@ -12,6 +12,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
 import { atualizarNotasDeTodos, conferirCodigosNoMunicipio, emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 import { criarPedido } from '@/lib/pedidos'
+import { PASTA_DIAGNOSTICOS, processarRelatorio } from '@/lib/diagnosticos'
+import { TIPOS_PENDENCIA } from '@/lib/situacao-fiscal'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
 
@@ -608,4 +610,51 @@ export async function criarServicoDoCnae(formData) {
       { onConflict: 'cliente_id,cod_trib_nac', ignoreDuplicates: true },
     )
   revalidarCliente(clienteId)
+}
+
+// ---------- Diagnósticos de regularização (página /regularizar) ----------
+
+export async function gerarRelatorioDiagnostico(_estado, formData) {
+  await exigirAdmin()
+  const supabase = createAdminClient()
+  const { data: diag } = await supabase.from('diagnosticos').select('*').eq('id', formData.get('id')).maybeSingle()
+  if (!diag) return { erro: 'Diagnóstico não encontrado.' }
+  const resultado = await processarRelatorio(supabase, diag, { doEscritorio: true })
+  revalidatePath('/admin')
+  return resultado.ok ? { ok: 'Relatório gerado.' } : { erro: resultado.erro }
+}
+
+// O escritório fecha o valor (quando a tabela não cobre) ou marca como concluído.
+export async function salvarDiagnostico(formData) {
+  await exigirAdmin()
+  const valorTexto = String(formData.get('valor') || '').trim()
+  const valor = valorTexto ? Number(valorTexto.replace(/\./g, '').replace(',', '.')) : null
+  const mudancas = { atualizado_em: new Date().toISOString() }
+  if (valorTexto && Number.isFinite(valor) && valor >= 0) mudancas.valor = valor
+  if (!valorTexto) mudancas.valor = null
+  if (formData.get('concluido')) mudancas.status = 'concluido'
+  await createAdminClient().from('diagnosticos').update(mudancas).eq('id', formData.get('id'))
+  revalidatePath('/admin')
+}
+
+export async function excluirDiagnostico(formData) {
+  await exigirAdmin()
+  const supabase = createAdminClient()
+  const { data: diag } = await supabase.from('diagnosticos').select('relatorio_caminho').eq('id', formData.get('id')).maybeSingle()
+  if (diag?.relatorio_caminho) await supabase.storage.from(PASTA_DIAGNOSTICOS).remove([diag.relatorio_caminho])
+  await supabase.from('diagnosticos').delete().eq('id', formData.get('id'))
+  revalidatePath('/admin')
+}
+
+export async function salvarPrecosRegularizacao(_estado, formData) {
+  await exigirAdmin()
+  const linhas = Object.keys(TIPOS_PENDENCIA).map((tipo) => {
+    const texto = String(formData.get(`valor_${tipo}`) || '').trim()
+    const valor = texto ? Number(texto.replace(/\./g, '').replace(',', '.')) : null
+    return { tipo, valor: Number.isFinite(valor) && valor >= 0 ? valor : null, por_item: Boolean(formData.get(`por_item_${tipo}`)) }
+  })
+  const { error } = await createAdminClient().from('precos_regularizacao').upsert(linhas)
+  if (error) return { erro: `Não foi possível salvar: ${error.message}. Rodou o supabase/007_diagnosticos.sql?` }
+  revalidatePath('/admin')
+  return { ok: 'Preços salvos. Valem para os próximos relatórios.' }
 }

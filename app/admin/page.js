@@ -10,6 +10,19 @@ import NovoCliente from './NovoCliente'
 import AtualizarNotas from './AtualizarNotas'
 import { aprovarRecomendacao, excluirRecomendacao } from './acoes'
 import { assinatura } from '@/lib/recomendacoes'
+import { dataBR } from '@/lib/formato'
+import { linkWhatsappPara } from '@/lib/contato'
+import { TIPOS_PENDENCIA } from '@/lib/situacao-fiscal'
+import { integraConfigurado } from '@/lib/diagnosticos'
+import { GerarRelatorio, PrecosRegularizacao } from './Diagnosticos'
+import { excluirDiagnostico, salvarDiagnostico } from './acoes'
+
+const STATUS_DIAGNOSTICO = {
+  aguardando_procuracao: 'aguardando procuração',
+  relatorio_pronto: 'relatório pronto',
+  erro: 'erro na consulta',
+  concluido: 'concluído',
+}
 
 export const metadata = { title: 'Administração · Amorins Contábil' }
 export const maxDuration = 300
@@ -29,6 +42,12 @@ export default async function Admin() {
     .order('aprovado')
     .order('criado_em', { ascending: false })
     .limit(30)
+  const { data: diagnosticos } = await supabase
+    .from('diagnosticos')
+    .select('id, token, cnpj, razao_social, nome, whatsapp, email, status, erro, resumo, valor, relatorio_caminho, tentativas, criado_em')
+    .order('criado_em', { ascending: false })
+    .limit(30)
+  const { data: precos } = await supabase.from('precos_regularizacao').select('*')
   const { data: listaServicos } = await supabase.from('servicos_nota').select('*').order('nome')
   const servicos = {}
   for (const s of listaServicos || []) (servicos[s.cliente_id] ||= []).push(s)
@@ -77,6 +96,67 @@ export default async function Admin() {
           ) : (
             <p className="vazio">Nenhuma recomendação recebida ainda. (Se der erro, rode supabase/006_recomendacoes.sql.)</p>
           )}
+        </div>
+        <div className="caixa">
+          <h2>Diagnósticos de CNPJ pelo site {diagnosticos?.length ? `(${diagnosticos.filter((d) => d.status !== 'concluido').length} em aberto)` : ''}</h2>
+          {!integraConfigurado() && (
+            <p className="info">
+              Consulta automática desligada: falta configurar o Integra Contador (Serpro) na Vercel. Até lá, puxe o
+              relatório no e-CAC e defina o valor aqui.
+            </p>
+          )}
+          {diagnosticos?.length ? (
+            <ul className="lista">
+              {diagnosticos.map((d) => (
+                <li key={d.id}>
+                  <div>
+                    <strong>{d.razao_social || formatarCnpj(d.cnpj)}</strong>
+                    <div className="info">
+                      {formatarCnpj(d.cnpj)} · {d.nome} ·{' '}
+                      <a href={linkWhatsappPara(d.whatsapp, `Olá, ${d.nome.split(' ')[0]}! Aqui é o Luis, da Amorins Contábil, sobre o diagnóstico do seu CNPJ.`)} target="_blank" rel="noreferrer">
+                        WhatsApp
+                      </a>
+                      {d.email ? ` · ${d.email}` : ''} · {dataBR(d.criado_em)}
+                    </div>
+                    <div className="info">
+                      {STATUS_DIAGNOSTICO[d.status] || d.status}
+                      {d.resumo?.pendencias?.length ? ` · ${d.resumo.pendencias.map((p) => p.titulo).join(', ')}` : ''}
+                      {d.resumo?.semPendencias ? ' · sem pendências' : ''}
+                      {d.erro && d.status !== 'relatorio_pronto' ? ` · ${d.erro}` : ''}
+                    </div>
+                    <div className="info">
+                      <a href={`/regularizar/${d.token}`} target="_blank" rel="noreferrer">Página do visitante</a>
+                      {d.relatorio_caminho && (
+                        <>
+                          {' · '}
+                          <a href={`/admin/diagnosticos/${d.id}/pdf`} target="_blank" rel="noreferrer">Relatório (PDF)</a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gap: 8, justifyItems: 'end' }}>
+                    {integraConfigurado() && <GerarRelatorio id={d.id} jaTem={Boolean(d.relatorio_caminho)} />}
+                    <form action={salvarDiagnostico} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input type="hidden" name="id" value={d.id} />
+                      <input name="valor" inputMode="decimal" placeholder="valor R$" defaultValue={d.valor ?? ''} style={{ width: 110 }} />
+                      <label className="info"><input type="checkbox" name="concluido" defaultChecked={d.status === 'concluido'} /> concluído</label>
+                      <button>Salvar</button>
+                    </form>
+                    <form action={excluirDiagnostico}>
+                      <input type="hidden" name="id" value={d.id} />
+                      <button className="perigo">Excluir (LGPD)</button>
+                    </form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="vazio">Nenhum pedido ainda. (Se der erro, rode supabase/007_diagnosticos.sql.)</p>
+          )}
+        </div>
+        <div className="caixa">
+          <h2>Preços da regularização</h2>
+          <PrecosRegularizacao tipos={TIPOS_PENDENCIA} precos={precos} />
         </div>
         <h1>Clientes</h1>
         <div className="caixa">
