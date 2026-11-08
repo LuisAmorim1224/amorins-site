@@ -500,7 +500,7 @@ export async function buscarNotasAnteriores(_estado, formData) {
   await exigirAdmin()
   const id = String(formData.get('id'))
   try {
-    const r = await importarNotasAnteriores(createAdminClient(), id, { refazerPdf: true })
+    const r = await importarNotasAnteriores(createAdminClient(), id)
     revalidarCliente(id)
     const detalhe = r.notas
       ? ''
