@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { ehAdmin, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { ehEquipe, getUsuario, precisaTrocarSenha } from '@/lib/auth'
 import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha } from '@/lib/login'
 import { validarRecomendacao } from '@/lib/recomendacoes'
 
@@ -19,7 +19,7 @@ export async function entrar(_estado, formData) {
     console.error('Erro no login:', error)
     return { erro: `Não foi possível entrar agora (${error.message}).` }
   }
-  redirect(ehAdmin(data.user) ? '/admin' : '/cliente')
+  redirect(ehEquipe(data.user) ? '/admin' : '/cliente')
 }
 
 export async function sair() {
@@ -65,7 +65,7 @@ export async function definirSenhaPrimeiroAcesso(_estado, formData) {
   const supabase = await createClient()
   const { error: erroLogin } = await supabase.auth.signInWithPassword({ email: user.email, password: senha })
   if (erroLogin) redirect('/login')
-  redirect('/cliente')
+  redirect(ehEquipe(user) ? '/admin' : '/cliente')
 }
 
 // Recomendação deixada no site por quem já foi atendido. Fica guardada até o escritório aprovar.

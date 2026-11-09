@@ -1,5 +1,7 @@
 import Barra from '@/components/Barra'
-import { exigirAdmin } from '@/lib/auth'
+import { ehAdmin, exigirEquipe } from '@/lib/auth'
+import { clientesDoSocio, ehSocio, filtrarClientes } from '@/lib/equipe'
+import Socios from './Socios'
 import { formatarCnpj } from '@/lib/cnpj'
 import { reais } from '@/lib/formato'
 import { ehEmailDeLogin } from '@/lib/login'
@@ -15,32 +17,47 @@ export const metadata = { title: 'Administração · Amorins Contábil' }
 export const maxDuration = 300
 
 export default async function Admin() {
-  await exigirAdmin()
+  const user = await exigirEquipe()
+  const admin = ehAdmin(user)
   const supabase = createAdminClient()
-  const { data: clientes } = await supabase.from('clientes').select('*').order('nome')
-  const { data: pendentes } = await supabase
+  const { data: todosClientes } = await supabase.from('clientes').select('*').order('nome')
+  const { data: todosPendentes } = await supabase
     .from('pedidos_nota')
     .select('*, clientes(nome)')
     .in('status', ['pendente', 'escolher_servico', 'erro'])
     .order('criado_em')
-  const { data: recomendacoes } = await supabase
-    .from('recomendacoes')
-    .select('*')
-    .order('aprovado')
-    .order('criado_em', { ascending: false })
-    .limit(30)
+  // Sócio só enxerga os clientes liberados para ele.
+  const clientes = filtrarClientes(user, todosClientes, admin)
+  const pendentes = filtrarClientes(user, todosPendentes, admin)
+  const { data: recomendacoes } = admin
+    ? await supabase.from('recomendacoes').select('*').order('aprovado').order('criado_em', { ascending: false }).limit(30)
+    : { data: [] }
   const { data: listaServicos } = await supabase.from('servicos_nota').select('*').order('nome')
   const servicos = {}
-  for (const s of listaServicos || []) (servicos[s.cliente_id] ||= []).push(s)
+  for (const s of filtrarClientes(user, listaServicos, admin)) (servicos[s.cliente_id] ||= []).push(s)
+  let socios = []
+  if (admin) {
+    const { data } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    socios = (data?.users || [])
+      .filter(ehSocio)
+      .map((u) => ({
+        id: u.id,
+        email: u.email,
+        nome: u.user_metadata?.nome || u.email,
+        clientes: clientesDoSocio(u),
+        primeiroAcesso: u.app_metadata?.trocar_senha === true,
+      }))
+  }
 
   return (
     <>
-      <Barra titulo="Administração" inicio="/admin" />
+      <Barra titulo={admin ? 'Administração' : 'Painel do escritório'} inicio="/admin" />
       <main className="painel">
         <div className="caixa">
           <h2>Notas fiscais para emitir {pendentes?.length ? `(${pendentes.length})` : ''}</h2>
           <ListaPedidos pedidos={pendentes || []} acoes={AcoesPedido} servicos={servicos} mostrarCliente />
         </div>
+        {admin && (<>
         <div className="caixa">
           <h2>Notas emitidas pelos clientes</h2>
           <AtualizarNotas />
@@ -78,6 +95,7 @@ export default async function Admin() {
             <p className="vazio">Nenhuma recomendação recebida ainda. (Se der erro, rode supabase/006_recomendacoes.sql.)</p>
           )}
         </div>
+        </>)}
         <h1>Clientes</h1>
         <div className="caixa">
           {clientes?.length ? (
@@ -104,10 +122,19 @@ export default async function Admin() {
             <p className="vazio">Nenhum cliente cadastrado ainda.</p>
           )}
         </div>
-        <div className="caixa">
-          <h2>Cadastrar cliente</h2>
-          <NovoCliente />
-        </div>
+        {admin && (
+          <>
+            <div className="caixa">
+              <h2>Cadastrar cliente</h2>
+              <NovoCliente />
+            </div>
+            <div className="caixa">
+              <h2>Sócios com acesso ao painel</h2>
+              <p className="vazio">O sócio entra pelo mesmo login do site e só vê os clientes marcados.</p>
+              <Socios socios={socios} clientes={(todosClientes || []).map((c) => ({ id: c.id, nome: c.nome }))} />
+            </div>
+          </>
+        )}
       </main>
     </>
   )

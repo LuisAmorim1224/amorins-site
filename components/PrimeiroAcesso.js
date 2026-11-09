@@ -3,14 +3,14 @@
 import { useActionState } from 'react'
 import { definirSenhaPrimeiroAcesso } from '@/app/acoes'
 
-export default function PrimeiroAcesso() {
+const TEXTO_CLIENTE =
+  'Bem-vindo! Por segurança, crie agora uma senha só sua. A senha inicial (números do CNPJ) deixa de funcionar e seus documentos ficam liberados.'
+
+export default function PrimeiroAcesso({ texto = TEXTO_CLIENTE }) {
   const [estado, acao, enviando] = useActionState(definirSenhaPrimeiroAcesso, {})
   return (
     <form action={acao} className="formulario">
-      <p>
-        Bem-vindo! Por segurança, crie agora uma senha só sua. A senha inicial (números do CNPJ) deixa
-        de funcionar e seus documentos ficam liberados.
-      </p>
+      <p>{texto}</p>
       <div className="duas">
         <label>
           Nova senha

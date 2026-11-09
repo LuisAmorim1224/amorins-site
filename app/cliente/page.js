@@ -12,7 +12,7 @@ import FichaCadastral from '@/components/FichaCadastral'
 import PrimeiroAcesso from '@/components/PrimeiroAcesso'
 import TrocarSenha from '@/components/TrocarSenha'
 import { cobrancaEmAberto, listarCobrancas } from '@/lib/asaas'
-import { ehAdmin, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { ehEquipe, getUsuario, precisaTrocarSenha } from '@/lib/auth'
 import { linkWhatsapp } from '@/lib/contato'
 import { listarDocumentos } from '@/lib/documentos'
 import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
@@ -27,7 +27,7 @@ const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.camin
 export default async function AreaDoCliente() {
   const user = await getUsuario()
   if (!user) redirect('/login')
-  if (ehAdmin(user)) redirect('/admin')
+  if (ehEquipe(user)) redirect('/admin')
 
   // Ainda com a senha inicial: mostra só a criação de senha, sem buscar nenhum dado.
   if (precisaTrocarSenha(user)) {

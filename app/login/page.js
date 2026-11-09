@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
-import { ehAdmin, getUsuario } from '@/lib/auth'
+import { ehEquipe, getUsuario } from '@/lib/auth'
 import FormLogin from './FormLogin'
 
 export const metadata = { title: 'Área do Cliente · Amorins Contábil' }
 
 export default async function Login() {
   const user = await getUsuario()
-  if (user) redirect(ehAdmin(user) ? '/admin' : '/cliente')
+  if (user) redirect(ehEquipe(user) ? '/admin' : '/cliente')
   return (
     <main className="login">
       <a href="/">

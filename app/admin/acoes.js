@@ -4,17 +4,76 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { atualizarClienteAsaas, criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
 import { numeroWhatsapp } from '@/lib/cobranca-whatsapp'
-import { exigirAdmin } from '@/lib/auth'
+import { exigirAcessoCliente, exigirAdmin } from '@/lib/auth'
+import { PAPEL_SOCIO } from '@/lib/equipe'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
-import { cnpjDoEmailDeLogin, emailDeLogin, senhaInicial } from '@/lib/login'
+import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
 import { atualizarNotasDeTodos, conferirCodigosNoMunicipio, emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
 import { criarPedido } from '@/lib/pedidos'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
+
+// Pedido, nota ou serviço: libera só se o cliente dono do registro estiver liberado.
+async function exigirAcessoAoRegistro(tabela, id) {
+  const { data } = await createAdminClient().from(tabela).select('cliente_id').eq('id', id).maybeSingle()
+  if (!data) throw new Error('Registro não encontrado.')
+  await exigirAcessoCliente(data.cliente_id)
+}
+
+// ---------- Sócios (acesso a parte dos clientes) ----------
+
+const clientesMarcados = (formData) => [...new Set(formData.getAll('clientes').map(String).filter(Boolean))]
+
+export async function cadastrarSocio(_estado, formData) {
+  await exigirAdmin()
+  const nome = String(formData.get('nome') || '').trim().slice(0, 120)
+  const email = String(formData.get('email') || '').trim().toLowerCase()
+  const senha = String(formData.get('senha') || '')
+  if (!nome) return { erro: 'Informe o nome do sócio.' }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { erro: 'Informe um e-mail válido para o login.' }
+  if (email === process.env.ADMIN_EMAIL?.trim().toLowerCase()) return { erro: 'Este é o e-mail do administrador.' }
+  const erroSenha = erroNaNovaSenha(senha, senha, null)
+  if (erroSenha) return { erro: erroSenha }
+  const { error } = await createAdminClient().auth.admin.createUser({
+    email,
+    password: senha,
+    email_confirm: true,
+    user_metadata: { nome },
+    app_metadata: { papel: PAPEL_SOCIO, clientes: clientesMarcados(formData), trocar_senha: true },
+  })
+  if (error) return { erro: /already|registered|exists/i.test(error.message) ? 'Já existe um acesso com este e-mail.' : error.message }
+  revalidatePath('/admin')
+  return { ok: `Acesso criado. ${nome} entra com ${email} e a senha inicial, e cria uma senha nova no primeiro acesso.` }
+}
+
+async function socioPorId(supabase, id) {
+  const { data } = await supabase.auth.admin.getUserById(id)
+  return data?.user?.app_metadata?.papel === PAPEL_SOCIO ? data.user : null
+}
+
+export async function salvarClientesSocio(_estado, formData) {
+  await exigirAdmin()
+  const supabase = createAdminClient()
+  const socio = await socioPorId(supabase, String(formData.get('id')))
+  if (!socio) return { erro: 'Sócio não encontrado.' }
+  const clientes = clientesMarcados(formData)
+  const { error } = await supabase.auth.admin.updateUserById(socio.id, { app_metadata: { ...socio.app_metadata, clientes } })
+  if (error) return { erro: error.message }
+  revalidatePath('/admin')
+  return { ok: `${clientes.length} cliente(s) liberado(s).` }
+}
+
+export async function removerSocio(formData) {
+  await exigirAdmin()
+  const supabase = createAdminClient()
+  const socio = await socioPorId(supabase, String(formData.get('id')))
+  if (socio) await supabase.auth.admin.deleteUser(socio.id)
+  revalidatePath('/admin')
+}
 
 export async function cadastrarCliente(_estado, formData) {
   await exigirAdmin()
@@ -100,8 +159,9 @@ async function ativarCobranca(supabase, cliente) {
 // A cobrança nunca começa sozinha: o escritório define o valor de cada cliente e confirma
 // aqui. O vencimento é sempre no dia 5.
 export async function ativarCobrancaMensal(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const valor = Number(String(formData.get('valor') || '').replace(/\./g, '').replace(',', '.'))
   if (!(valor > 0)) return { erro: 'Informe o valor do honorário mensal.' }
   if (formData.get('confirmo') !== 'sim') return { erro: 'Marque a confirmação antes de ativar a cobrança.' }
@@ -129,8 +189,9 @@ export async function ativarCobrancaMensal(_estado, formData) {
 
 // Cobrança avulsa (mês em atraso, serviço extra). Também só sai com confirmação.
 export async function gerarCobrancaAvulsa(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const valor = Number(String(formData.get('valor') || '').replace(/\./g, '').replace(',', '.'))
   const vencimento = String(formData.get('vencimento') || '')
   const descricao = String(formData.get('descricao') || '').trim() || 'Honorários contábeis - Amorins Contábil'
@@ -158,7 +219,7 @@ export async function gerarCobrancaAvulsa(_estado, formData) {
 // Gera uma autorização de envio: o navegador manda o arquivo direto para o Supabase,
 // sem passar pelo servidor do site (que tem limite de tamanho).
 export async function autorizarEnvio(clienteId, nomeArquivo) {
-  await exigirAdmin()
+  await exigirAcessoCliente(clienteId)
   const caminho = `${clienteId}/${nomeSeguro(nomeArquivo)}`
   const { data, error } = await createAdminClient()
     .storage.from(PASTA)
@@ -168,15 +229,16 @@ export async function autorizarEnvio(clienteId, nomeArquivo) {
 }
 
 export async function atualizarDocumentos(clienteId) {
-  await exigirAdmin()
+  await exigirAcessoCliente(clienteId)
   revalidatePath(`/admin/clientes/${clienteId}`)
 }
 
 // Cliente esqueceu a senha: volta para a senha inicial (6 primeiros dígitos do CNPJ)
 // e exige criar uma nova no próximo acesso.
 export async function restaurarSenhaInicial(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const supabase = createAdminClient()
   const { data, error } = await supabase.auth.admin.getUserById(id)
   if (error || !data?.user) return { erro: 'Acesso do cliente não encontrado.' }
@@ -192,7 +254,7 @@ export async function restaurarSenhaInicial(_estado, formData) {
 
 // Guarda o tipo e a validade do arquivo que acabou de ser enviado.
 export async function registrarDocumento(clienteId, caminho, tipo, validade) {
-  await exigirAdmin()
+  await exigirAcessoCliente(clienteId)
   if (!caminho.startsWith(`${clienteId}/`)) throw new Error('Caminho de arquivo inválido.')
   const { error } = await createAdminClient()
     .from('documentos_info')
@@ -206,7 +268,7 @@ export async function registrarDocumento(clienteId, caminho, tipo, validade) {
 }
 
 export async function excluirDocumento(formData) {
-  await exigirAdmin()
+  await exigirAcessoCliente(String(formData.get('caminho')).split('/')[0])
   const caminho = String(formData.get('caminho'))
   const supabase = createAdminClient()
   await supabase.storage.from(PASTA).remove([caminho])
@@ -239,8 +301,9 @@ async function gravarDadosDaReceita(supabase, clienteId, cnpj) {
 }
 
 export async function atualizarDadosReceita(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const supabase = createAdminClient()
   const { data: cliente } = await supabase.from('clientes').select('cpf_cnpj').eq('id', id).single()
   if (!cliente || cliente.cpf_cnpj?.length !== 14) return { erro: 'Este cliente não tem CNPJ cadastrado.' }
@@ -254,8 +317,9 @@ export async function atualizarDadosReceita(_estado, formData) {
 }
 
 export async function importarFicha(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const arquivo = formData.get('ficha')
   if (!arquivo || typeof arquivo === 'string' || !arquivo.size) return { erro: 'Escolha o arquivo da ficha (.json).' }
   if (arquivo.size > 1024 * 1024) return { erro: 'Arquivo grande demais para uma ficha.' }
@@ -312,7 +376,7 @@ const valorEmReais = (v) => {
 
 // O escritório emitiu a nota: marca o pedido e já lança a nota na prévia de impostos do cliente.
 export async function marcarPedidoEmitido(_estado, formData) {
-  await exigirAdmin()
+  await exigirAcessoAoRegistro('pedidos_nota', String(formData.get('id')))
   const id = String(formData.get('id'))
   const supabase = createAdminClient()
   const { data: pedido } = await supabase.from('pedidos_nota').select('*').eq('id', id).single()
@@ -361,7 +425,7 @@ export async function marcarPedidoEmitido(_estado, formData) {
 }
 
 export async function cancelarPedido(formData) {
-  await exigirAdmin()
+  await exigirAcessoAoRegistro('pedidos_nota', String(formData.get('id')))
   const id = String(formData.get('id'))
   const resposta = String(formData.get('resposta') || '').trim().slice(0, 500) || null
   const supabase = createAdminClient()
@@ -377,7 +441,7 @@ export async function cancelarPedido(formData) {
 }
 
 export async function excluirNotaEmitida(formData) {
-  await exigirAdmin()
+  await exigirAcessoAoRegistro('notas_emitidas', String(formData.get('id')))
   const id = String(formData.get('id'))
   const supabase = createAdminClient()
   const { data } = await supabase.from('notas_emitidas').delete().eq('id', id).select('cliente_id').single()
@@ -386,8 +450,9 @@ export async function excluirNotaEmitida(formData) {
 
 // WhatsApp do cliente: usado no botão "Enviar pelo WhatsApp" das cobranças e repassado ao Asaas.
 export async function salvarWhatsapp(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const digitado = String(formData.get('telefone') || '').trim()
   const numero = numeroWhatsapp(digitado)
   if (digitado && !numero) return { erro: 'Número inválido. Use DDD + número, ex.: (71) 99999-9999.' }
@@ -412,8 +477,9 @@ export async function salvarWhatsapp(_estado, formData) {
 }
 
 export async function salvarDadosInternos(formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const anexo = String(formData.get('anexo') || '')
   const regime = String(formData.get('regime') || '')
   const pendencias = String(formData.get('pendencias') || '')
@@ -443,8 +509,9 @@ const percentual = (v) => {
 }
 
 export async function salvarConfigNfse(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const municipio = somenteNumeros(formData.get('municipio'))
   if (!/^\d{7}$/.test(municipio)) return { erro: 'O código IBGE do município tem 7 números (Salvador = 2927408).' }
   const opSimples = String(formData.get('op_simples'))
@@ -469,8 +536,9 @@ export async function salvarConfigNfse(_estado, formData) {
 }
 
 export async function enviarCertificado(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   const arquivo = formData.get('certificado')
   const senha = String(formData.get('senha') || '')
   if (!arquivo || typeof arquivo === 'string' || !arquivo.size) return { erro: 'Escolha o arquivo do certificado (.pfx ou .p12).' }
@@ -486,7 +554,7 @@ export async function enviarCertificado(_estado, formData) {
 }
 
 export async function salvarServico(_estado, formData) {
-  await exigirAdmin()
+  await exigirAcessoCliente(String(formData.get('cliente_id') || ''))
   const clienteId = String(formData.get('cliente_id'))
   const servico = {
     cliente_id: clienteId,
@@ -514,7 +582,7 @@ export async function salvarServico(_estado, formData) {
 }
 
 export async function excluirServico(formData) {
-  await exigirAdmin()
+  await exigirAcessoAoRegistro('servicos_nota', String(formData.get('id')))
   const { data } = await createAdminClient()
     .from('servicos_nota')
     .delete()
@@ -525,8 +593,9 @@ export async function excluirServico(formData) {
 }
 
 export async function buscarNotasAnteriores(_estado, formData) {
-  await exigirAdmin()
+  
   const id = String(formData.get('id'))
+  await exigirAcessoCliente(id)
   try {
     const r = await importarNotasAnteriores(createAdminClient(), id)
     revalidarCliente(id)
@@ -541,7 +610,7 @@ export async function buscarNotasAnteriores(_estado, formData) {
 
 // Escolhe (ou troca) o serviço do pedido e, se pedido, já emite.
 export async function escolherServicoEEmitir(_estado, formData) {
-  await exigirAdmin()
+  await exigirAcessoAoRegistro('pedidos_nota', String(formData.get('id')))
   const id = String(formData.get('id'))
   const servicoId = String(formData.get('servico_id') || '')
   const supabase = createAdminClient()
@@ -582,7 +651,7 @@ export async function excluirRecomendacao(formData) {
 // Pedido de nota criado pelo escritório (sem o cliente entrar no portal). Não emite sozinho:
 // o pedido aparece na lista com o botão "Emitir NFS-e".
 export async function pedirNotaPeloEscritorio(_estado, formData) {
-  await exigirAdmin()
+  await exigirAcessoCliente(String(formData.get('cliente_id') || ''))
   const clienteId = String(formData.get('cliente_id') || '')
   if (!clienteId) return { erro: 'Cliente não informado.' }
   const r = await criarPedido(createAdminClient(), clienteId, formData, { servicoId: String(formData.get('servico_id') || '') || undefined })
@@ -614,7 +683,7 @@ function resumoAtualizacao(r) {
 }
 
 export async function conferirCodigos(_estado, formData) {
-  await exigirAdmin()
+  await exigirAcessoCliente(String(formData.get('id')))
   try {
     const linhas = await conferirCodigosNoMunicipio(createAdminClient(), String(formData.get('id')))
     return { linhas }
@@ -625,7 +694,7 @@ export async function conferirCodigos(_estado, formData) {
 
 // Cadastra o serviço sugerido para um CNAE do cartão do CNPJ.
 export async function criarServicoDoCnae(formData) {
-  await exigirAdmin()
+  await exigirAcessoCliente(String(formData.get('cliente_id') || ''))
   const clienteId = String(formData.get('cliente_id'))
   const cod = somenteNumeros(formData.get('cod'))
   if (!clienteId || cod.length !== 6) return

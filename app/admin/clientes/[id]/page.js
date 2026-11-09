@@ -4,7 +4,7 @@ import Cobrancas from '@/components/Cobrancas'
 import Documentos from '@/components/Documentos'
 import FichaCadastral from '@/components/FichaCadastral'
 import { listarCobrancas } from '@/lib/asaas'
-import { exigirAdmin } from '@/lib/auth'
+import { exigirAcessoCliente } from '@/lib/auth'
 import { listarDocumentos } from '@/lib/documentos'
 import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
 import { reais } from '@/lib/formato'
@@ -33,8 +33,8 @@ import WhatsappCliente from './WhatsappCliente'
 const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.caminho_arquivo, n.caminho_xml]).filter(Boolean))
 
 export default async function Cliente({ params }) {
-  await exigirAdmin()
   const { id } = await params
+  await exigirAcessoCliente(id)
   const supabase = createAdminClient()
   const { data: cliente } = await supabase.from('clientes').select('*').eq('id', id).maybeSingle()
   if (!cliente) notFound()
