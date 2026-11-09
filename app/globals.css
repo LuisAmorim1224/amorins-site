@@ -196,6 +196,7 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
 .pasta .contagem { background: #eaf1ff; color: var(--azul-vivo); border-radius: 999px; padding: 1px 10px; font-size: 0.85em; }
 .pasta .mes-titulo { font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texto-suave); margin-top: 6px; }
 .botao.pequeno { padding: 6px 12px; font-size: 0.85em; }
+.botao.botao-whatsapp { background: #1fa855; }
 .lista.pedidos li { align-items: flex-start; }
 .previa { display: grid; gap: 14px; }
 .grafico-meses { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; height: 140px; align-items: end; padding: 10px 6px 0; background: #fbfcff; border: 1px solid #e3e9f6; border-radius: 12px; }

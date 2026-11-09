@@ -172,7 +172,11 @@ export default async function Cliente({ params }) {
           {!cliente.asaas_subscription_id && (
             <AtivarCobranca clienteId={id} valorAtual={cliente.valor_honorario} />
           )}
-          <Cobrancas cobrancas={cobrancas} erro={erroCobrancas} />
+          <Cobrancas
+            cobrancas={cobrancas}
+            erro={erroCobrancas}
+            whatsapp={{ nome: cliente.nome_fantasia || cliente.nome, telefone: cliente.telefone || cliente.telefone_receita }}
+          />
           <details style={{ marginTop: 16 }}>
             <summary>Gerar cobrança avulsa (mês em atraso, serviço extra)</summary>
             <CobrancaAvulsa clienteId={id} valorSugerido={cliente.valor_honorario} />
