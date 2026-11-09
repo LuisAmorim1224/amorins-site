@@ -27,6 +27,7 @@ import AcessoCliente from './AcessoCliente'
 import AcoesFicha from './AcoesFicha'
 import EnviarDocumentos from './EnviarDocumentos'
 import NotaAutomatica from './NotaAutomatica'
+import WhatsappCliente from './WhatsappCliente'
 
 // Arquivos das notas aparecem só na lista de notas (com o botão de baixar), não em Documentos.
 const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.caminho_arquivo, n.caminho_xml]).filter(Boolean))
@@ -169,6 +170,7 @@ export default async function Cliente({ params }) {
         </div>
         <div className="caixa">
           <h2>Cobranças</h2>
+          <WhatsappCliente clienteId={id} telefone={cliente.telefone} telefoneReceita={cliente.telefone_receita} />
           {!cliente.asaas_subscription_id && (
             <AtivarCobranca clienteId={id} valorAtual={cliente.valor_honorario} />
           )}

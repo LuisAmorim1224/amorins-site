@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
+import { atualizarClienteAsaas, criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
+import { numeroWhatsapp } from '@/lib/cobranca-whatsapp'
 import { exigirAdmin } from '@/lib/auth'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
@@ -381,6 +382,33 @@ export async function excluirNotaEmitida(formData) {
   const supabase = createAdminClient()
   const { data } = await supabase.from('notas_emitidas').delete().eq('id', id).select('cliente_id').single()
   if (data) revalidatePath(`/admin/clientes/${data.cliente_id}`)
+}
+
+// WhatsApp do cliente: usado no botão "Enviar pelo WhatsApp" das cobranças e repassado ao Asaas.
+export async function salvarWhatsapp(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id'))
+  const digitado = String(formData.get('telefone') || '').trim()
+  const numero = numeroWhatsapp(digitado)
+  if (digitado && !numero) return { erro: 'Número inválido. Use DDD + número, ex.: (71) 99999-9999.' }
+  const telefone = numero ? numero.slice(2) : null
+  const supabase = createAdminClient()
+  const { data: cliente, error } = await supabase
+    .from('clientes')
+    .update({ telefone })
+    .eq('id', id)
+    .select('asaas_customer_id')
+    .single()
+  if (error) return { erro: 'Não foi possível salvar o número agora.' }
+  if (cliente?.asaas_customer_id && telefone) {
+    try {
+      await atualizarClienteAsaas(cliente.asaas_customer_id, { mobilePhone: telefone })
+    } catch (e) {
+      console.error('Asaas não atualizou o celular:', e.message)
+    }
+  }
+  revalidatePath(`/admin/clientes/${id}`)
+  return { ok: telefone ? 'Número salvo.' : 'Número removido.' }
 }
 
 export async function salvarDadosInternos(formData) {
