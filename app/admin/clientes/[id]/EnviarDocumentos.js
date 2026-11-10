@@ -15,6 +15,7 @@ export default function EnviarDocumentos({ clienteId }) {
     const arquivos = Array.from(formulario.arquivos.files)
     const tipo = formulario.tipo.value
     const validade = formulario.validade.value
+    const competencia = formulario.competencia.value
     if (!arquivos.length) return
     setEnviando(true)
     setMensagem(null)
@@ -22,11 +23,11 @@ export default function EnviarDocumentos({ clienteId }) {
     const falhas = []
     for (const arquivo of arquivos) {
       try {
-        const { caminho, token } = await autorizarEnvio(clienteId, arquivo.name)
+        const { caminho, token } = await autorizarEnvio(clienteId, arquivo.name, competencia)
         const { error } = await supabase.storage.from('documentos').uploadToSignedUrl(caminho, token, arquivo)
         if (error) throw error
         try {
-          await registrarDocumento(clienteId, caminho, tipo, validade)
+          await registrarDocumento(clienteId, caminho, tipo, validade, competencia)
         } catch (e) {
           // O arquivo já está na pasta; só não ficou classificado (ex.: migração 002 não rodada).
           console.error('Não foi possível salvar tipo/validade:', e)
@@ -64,6 +65,14 @@ export default function EnviarDocumentos({ clienteId }) {
           <input type="date" name="validade" />
         </label>
       </div>
+      <label>
+        Mês de referência (opcional)
+        <input type="month" name="competencia" />
+        <span className="vazio pequeno">
+          Preenchido: o arquivo aparece para o cliente em &quot;Arquivos do mês&quot;, na pasta deste mês. Em branco: vai para
+          &quot;Seus documentos&quot;.
+        </span>
+      </label>
       {mensagem?.erro && <p className="erro">{mensagem.erro}</p>}
       {mensagem?.ok && <p className="ok">{mensagem.ok}</p>}
       <div>

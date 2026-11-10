@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { atualizarClienteAsaas, criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
 import { numeroWhatsapp } from '@/lib/cobranca-whatsapp'
+import { competenciaValida, nomeNoArmazenamento } from '@/lib/arquivos-mes'
 import { exigirAcessoCliente, exigirAdmin } from '@/lib/auth'
 import { PAPEL_SOCIO } from '@/lib/equipe'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
@@ -218,9 +219,9 @@ export async function gerarCobrancaAvulsa(_estado, formData) {
 
 // Gera uma autorização de envio: o navegador manda o arquivo direto para o Supabase,
 // sem passar pelo servidor do site (que tem limite de tamanho).
-export async function autorizarEnvio(clienteId, nomeArquivo) {
+export async function autorizarEnvio(clienteId, nomeArquivo, competencia) {
   await exigirAcessoCliente(clienteId)
-  const caminho = `${clienteId}/${nomeSeguro(nomeArquivo)}`
+  const caminho = `${clienteId}/${nomeNoArmazenamento(nomeSeguro(nomeArquivo), competenciaValida(competencia))}`
   const { data, error } = await createAdminClient()
     .storage.from(PASTA)
     .createSignedUploadUrl(caminho, { upsert: true })
@@ -253,18 +254,19 @@ export async function restaurarSenhaInicial(_estado, formData) {
 }
 
 // Guarda o tipo e a validade do arquivo que acabou de ser enviado.
-export async function registrarDocumento(clienteId, caminho, tipo, validade) {
+export async function registrarDocumento(clienteId, caminho, tipo, validade, competencia) {
   await exigirAcessoCliente(clienteId)
   if (!caminho.startsWith(`${clienteId}/`)) throw new Error('Caminho de arquivo inválido.')
-  const { error } = await createAdminClient()
-    .from('documentos_info')
-    .upsert({
-      caminho,
-      cliente_id: clienteId,
-      tipo: tipoDocumento(tipo),
-      validade: /^\d{4}-\d{2}-\d{2}$/.test(validade || '') ? validade : null,
-    })
-  if (error) throw new Error(error.message)
+  const registro = {
+    caminho,
+    cliente_id: clienteId,
+    tipo: tipoDocumento(tipo),
+    validade: /^\d{4}-\d{2}-\d{2}$/.test(validade || '') ? validade : null,
+  }
+  const mes = competenciaValida(competencia)
+  if (mes) registro.competencia = mes
+  const { error } = await createAdminClient().from('documentos_info').upsert(registro)
+  if (error) throw new Error(/competencia/.test(error.message) ? 'Rode o supabase/007_arquivos_do_mes.sql para usar o mês de referência.' : error.message)
 }
 
 export async function excluirDocumento(formData) {

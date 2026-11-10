@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Barra from '@/components/Barra'
 import Cobrancas from '@/components/Cobrancas'
 import DocumentosPorPasta from '@/components/cliente/DocumentosPorPasta'
+import ArquivosDoMes from '@/components/cliente/ArquivosDoMes'
 import EnviarParaEscritorio from '@/components/cliente/EnviarParaEscritorio'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
 import NotasEmitidas from '@/components/cliente/NotasEmitidas'
@@ -85,6 +86,7 @@ export default async function AreaDoCliente() {
         <a href="#inicio">Início</a>
         <a href="#notas">Notas fiscais</a>
         <a href="#impostos">Impostos</a>
+        <a href="#arquivos-mes">Arquivos do mês</a>
         <a href="#documentos">Documentos</a>
         <a href="#enviar">Enviar arquivos</a>
         <a href="#empresa">Sua empresa</a>
@@ -117,9 +119,15 @@ export default async function AreaDoCliente() {
           <NotasEmitidas notas={notas || []} documentos={documentos} />
         </div>
 
+        <div className="caixa" id="arquivos-mes">
+          <h2>Arquivos do mês</h2>
+          <p className="vazio">Guias, relatórios e demais arquivos que o escritório preparou para você, separados por mês.</p>
+          <ArquivosDoMes documentos={documentos.filter((d) => d.competencia)} />
+        </div>
+
         <div className="caixa" id="documentos">
           <h2>Seus documentos</h2>
-          <DocumentosPorPasta documentos={documentos.filter((d) => !caminhosDeNotas(notas).has(d.caminho))} />
+          <DocumentosPorPasta documentos={documentos.filter((d) => !d.competencia && !caminhosDeNotas(notas).has(d.caminho))} />
         </div>
 
         <div className="caixa" id="enviar">

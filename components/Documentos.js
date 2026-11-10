@@ -1,4 +1,5 @@
 import { isoDe, TIPOS_DOCUMENTO } from '@/lib/ficha'
+import { nomeCompetencia } from '@/lib/arquivos-mes'
 import { dataBR, tamanho } from '@/lib/formato'
 import { hojeNaBahia } from '@/lib/vencimento'
 
@@ -12,6 +13,7 @@ export default function Documentos({ documentos, excluir }) {
           <div>
             <a href={d.url}>{d.nome}</a>
             <div className="info">
+              {d.competencia && `Arquivos do mês: ${nomeCompetencia(d.competencia)} · `}
               {d.tipo && d.tipo !== 'outro' && `${TIPOS_DOCUMENTO[d.tipo] || d.tipo} · `}
               {dataBR(d.data)} {d.tamanho ? `· ${tamanho(d.tamanho)}` : ''}
               {d.validade && (
