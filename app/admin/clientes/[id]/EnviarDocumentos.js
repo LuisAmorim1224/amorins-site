@@ -61,7 +61,7 @@ export default function EnviarDocumentos({ clienteId }) {
           </select>
         </label>
         <label>
-          Validade (opcional)
+          Validade ou vencimento da guia (opcional)
           <input type="date" name="validade" />
         </label>
       </div>

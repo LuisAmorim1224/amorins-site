@@ -3,6 +3,10 @@ import Barra from '@/components/Barra'
 import Cobrancas from '@/components/Cobrancas'
 import DocumentosPorPasta from '@/components/cliente/DocumentosPorPasta'
 import ArquivosDoMes from '@/components/cliente/ArquivosDoMes'
+import GuiasPagamento from '@/components/cliente/GuiasPagamento'
+import { nomeParaMostrar } from '@/lib/arquivos-mes'
+import { dataBR } from '@/lib/formato'
+import { ehGuia, guiasNovas, separarGuias } from '@/lib/guias'
 import EnviarParaEscritorio from '@/components/cliente/EnviarParaEscritorio'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
 import NotasEmitidas from '@/components/cliente/NotasEmitidas'
@@ -72,7 +76,9 @@ export default async function AreaDoCliente() {
   const proximaCobranca = cobrancas
     .filter((c) => cobrancaEmAberto(c.status))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0]
-  const ultimaGuia = documentos.filter((d) => d.tipo === 'guia').sort((a, b) => String(b.data).localeCompare(String(a.data)))[0]
+  const guias = separarGuias(documentos, hoje)
+  const novas = guiasNovas(guias.emAberto)
+  const outrosDocumentos = documentos.filter((d) => !ehGuia(d))
   const faturamentoMes = (notas || [])
     .filter((n) => String(n.data_emissao).startsWith(hoje.slice(0, 7)))
     .reduce((t, n) => t + Number(n.valor), 0)
@@ -84,6 +90,7 @@ export default async function AreaDoCliente() {
       <Barra titulo="Área do Cliente" inicio="/cliente" whatsapp={linkWhatsapp(`Olá! Sou cliente (${nome}) e preciso de ajuda.`)} />
       <nav className="submenu">
         <a href="#inicio">Início</a>
+        <a href="#guias">Guias</a>
         <a href="#notas">Notas fiscais</a>
         <a href="#impostos">Impostos</a>
         <a href="#arquivos-mes">Arquivos do mês</a>
@@ -97,13 +104,29 @@ export default async function AreaDoCliente() {
           <h1>Olá, {nome}!</h1>
           <p className="vazio">Aqui está o resumo da sua empresa hoje.</p>
         </div>
+        {novas.length > 0 && (
+          <a href="#guias" className="aviso-guia">
+            <strong>📢 {novas.length === 1 ? 'Nova guia disponível' : `${novas.length} novas guias disponíveis`}</strong>
+            <span>
+              {novas
+                .map((g) => `${nomeParaMostrar(g.nome, g.competencia)}${g.validade ? ` (vence em ${dataBR(g.validade)})` : ''}`)
+                .join(' · ')}
+            </span>
+            <span className="acao">Ver e baixar →</span>
+          </a>
+        )}
         <PainelResumo
           pendencias={pendencias.length}
           proximaCobranca={proximaCobranca}
-          ultimaGuia={ultimaGuia}
+          proximaGuia={guias.emAberto[0]}
           faturamentoMes={faturamentoMes}
           pedidosAbertos={pedidosAbertos}
         />
+
+        <div className="caixa" id="guias">
+          <h2>Guias para pagamento</h2>
+          <GuiasPagamento emAberto={guias.emAberto} pagas={guias.pagas} />
+        </div>
 
         <div className="caixa" id="notas">
           <h2>Pedir nota fiscal</h2>
@@ -121,13 +144,13 @@ export default async function AreaDoCliente() {
 
         <div className="caixa" id="arquivos-mes">
           <h2>Arquivos do mês</h2>
-          <p className="vazio">Guias, relatórios e demais arquivos que o escritório preparou para você, separados por mês.</p>
-          <ArquivosDoMes documentos={documentos.filter((d) => d.competencia)} />
+          <p className="vazio">Relatórios e demais arquivos que o escritório preparou para você, separados por mês.</p>
+          <ArquivosDoMes documentos={outrosDocumentos.filter((d) => d.competencia)} />
         </div>
 
         <div className="caixa" id="documentos">
           <h2>Seus documentos</h2>
-          <DocumentosPorPasta documentos={documentos.filter((d) => !d.competencia && !caminhosDeNotas(notas).has(d.caminho))} />
+          <DocumentosPorPasta documentos={outrosDocumentos.filter((d) => !d.competencia && !caminhosDeNotas(notas).has(d.caminho))} />
         </div>
 
         <div className="caixa" id="enviar">

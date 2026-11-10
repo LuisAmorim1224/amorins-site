@@ -197,6 +197,9 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
 .pasta .mes-titulo { font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texto-suave); margin-top: 6px; }
 .botao.pequeno { padding: 6px 12px; font-size: 0.85em; }
 .botao.botao-whatsapp { background: #1fa855; }
+.aviso-guia { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; background: #fff4e5; border: 1px solid #f3c27a; border-left: 6px solid #ef9f27; border-radius: 12px; padding: 14px 18px; color: #6b3d00; text-decoration: none; }
+.aviso-guia strong { font-size: 1.05em; }
+.aviso-guia .acao { margin-left: auto; font-weight: bold; color: #1a3ba1; }
 .escolher-clientes { border: 1px solid #dde3ee; border-radius: 8px; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; }
 .escolher-clientes legend { font-weight: bold; padding: 0 6px; }
 .escolher-clientes .opcao { display: flex; align-items: center; gap: 8px; font-weight: normal; }

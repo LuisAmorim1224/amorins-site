@@ -1,3 +1,4 @@
+import { nomeParaMostrar } from '@/lib/arquivos-mes'
 import { dataBR, reais } from '@/lib/formato'
 
 function Indicador({ rotulo, valor, detalhe, tom }) {
@@ -10,7 +11,7 @@ function Indicador({ rotulo, valor, detalhe, tom }) {
   )
 }
 
-export default function PainelResumo({ pendencias, proximaCobranca, ultimaGuia, faturamentoMes, pedidosAbertos }) {
+export default function PainelResumo({ pendencias, proximaCobranca, proximaGuia, faturamentoMes, pedidosAbertos }) {
   return (
     <div className="painel-resumo">
       <Indicador
@@ -25,9 +26,10 @@ export default function PainelResumo({ pendencias, proximaCobranca, ultimaGuia, 
         detalhe={proximaCobranca ? `vence em ${dataBR(proximaCobranca.dueDate)}` : 'Nenhuma cobrança em aberto'}
       />
       <Indicador
-        rotulo="Última guia"
-        valor={ultimaGuia ? dataBR(ultimaGuia.data) : '—'}
-        detalhe={ultimaGuia ? ultimaGuia.nome : 'Nenhuma guia enviada ainda'}
+        rotulo="Próxima guia"
+        valor={proximaGuia ? (proximaGuia.validade ? `vence ${dataBR(proximaGuia.validade)}` : 'Disponível') : 'Nenhuma'}
+        detalhe={proximaGuia ? nomeParaMostrar(proximaGuia.nome, proximaGuia.competencia) : 'Nenhuma guia em aberto'}
+        tom={proximaGuia?.situacao === 'vencida' ? 'alerta' : undefined}
       />
       <Indicador
         rotulo="Faturado no mês"

@@ -269,6 +269,22 @@ export async function registrarDocumento(clienteId, caminho, tipo, validade, com
   if (error) throw new Error(/competencia/.test(error.message) ? 'Rode o supabase/007_arquivos_do_mes.sql para usar o mês de referência.' : error.message)
 }
 
+// Guia de imposto paga / não paga (aparece assim para o cliente).
+export async function marcarGuiaPaga(formData) {
+  const caminho = String(formData.get('caminho'))
+  const clienteId = caminho.split('/')[0]
+  await exigirAcessoCliente(clienteId)
+  const paga = formData.get('paga') === 'sim'
+  const { error } = await createAdminClient()
+    .from('documentos_info')
+    .update({ paga, paga_em: paga ? new Date().toISOString() : null })
+    .eq('caminho', caminho)
+    .eq('cliente_id', clienteId)
+  if (error) throw new Error(/paga/.test(error.message) ? 'Rode o supabase/008_guias.sql para marcar guias como pagas.' : error.message)
+  revalidatePath(`/admin/clientes/${clienteId}`)
+  revalidatePath('/cliente')
+}
+
 export async function excluirDocumento(formData) {
   await exigirAcessoCliente(String(formData.get('caminho')).split('/')[0])
   const caminho = String(formData.get('caminho'))

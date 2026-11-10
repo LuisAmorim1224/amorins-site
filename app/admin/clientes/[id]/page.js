@@ -28,6 +28,8 @@ import AcoesFicha from './AcoesFicha'
 import EnviarDocumentos from './EnviarDocumentos'
 import NotaAutomatica from './NotaAutomatica'
 import WhatsappCliente from './WhatsappCliente'
+import GuiasAdmin from './GuiasAdmin'
+import { ehGuia, separarGuias } from '@/lib/guias'
 
 // Arquivos das notas aparecem só na lista de notas (com o botão de baixar), não em Documentos.
 const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.caminho_arquivo, n.caminho_xml]).filter(Boolean))
@@ -165,8 +167,15 @@ export default async function Cliente({ params }) {
           <EnviarDocumentos clienteId={id} />
         </div>
         <div className="caixa">
+          <h2>Guias para pagamento</h2>
+          <GuiasAdmin
+            {...separarGuias(documentos, isoDe(hojeNaBahia()))}
+            contato={{ nome: cliente.nome_fantasia || cliente.nome, telefone: cliente.telefone || cliente.telefone_receita }}
+          />
+        </div>
+        <div className="caixa">
           <h2>Documentos do cliente</h2>
-          <Documentos documentos={documentos.filter((d) => !caminhosDeNotas(notas).has(d.caminho))} excluir={excluirDocumento} />
+          <Documentos documentos={documentos.filter((d) => !ehGuia(d) && !caminhosDeNotas(notas).has(d.caminho))} excluir={excluirDocumento} />
         </div>
         <div className="caixa">
           <h2>Cobranças</h2>
