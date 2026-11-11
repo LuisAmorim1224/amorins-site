@@ -5,8 +5,8 @@ import { redirect } from 'next/navigation'
 import { atualizarClienteAsaas, criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
 import { numeroWhatsapp } from '@/lib/cobranca-whatsapp'
 import { competenciaValida, nomeNoArmazenamento } from '@/lib/arquivos-mes'
-import { exigirAcessoCliente, exigirAdmin } from '@/lib/auth'
-import { PAPEL_SOCIO } from '@/lib/equipe'
+import { ehAdmin, exigirAcessoCliente, exigirAdmin, exigirEquipe } from '@/lib/auth'
+import { comClienteLiberado, PAPEL_SOCIO, podeCadastrarClientes } from '@/lib/equipe'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
@@ -44,7 +44,12 @@ export async function cadastrarSocio(_estado, formData) {
     password: senha,
     email_confirm: true,
     user_metadata: { nome },
-    app_metadata: { papel: PAPEL_SOCIO, clientes: clientesMarcados(formData), trocar_senha: true },
+    app_metadata: {
+      papel: PAPEL_SOCIO,
+      clientes: clientesMarcados(formData),
+      pode_cadastrar: formData.get('pode_cadastrar') === 'on',
+      trocar_senha: true,
+    },
   })
   if (error) return { erro: /already|registered|exists/i.test(error.message) ? 'Já existe um acesso com este e-mail.' : error.message }
   revalidatePath('/admin')
@@ -62,10 +67,13 @@ export async function salvarClientesSocio(_estado, formData) {
   const socio = await socioPorId(supabase, String(formData.get('id')))
   if (!socio) return { erro: 'Sócio não encontrado.' }
   const clientes = clientesMarcados(formData)
-  const { error } = await supabase.auth.admin.updateUserById(socio.id, { app_metadata: { ...socio.app_metadata, clientes } })
+  const podeCadastrar = formData.get('pode_cadastrar') === 'on'
+  const { error } = await supabase.auth.admin.updateUserById(socio.id, {
+    app_metadata: { ...socio.app_metadata, clientes, pode_cadastrar: podeCadastrar },
+  })
   if (error) return { erro: error.message }
   revalidatePath('/admin')
-  return { ok: `${clientes.length} cliente(s) liberado(s).` }
+  return { ok: `${clientes.length} cliente(s) liberado(s)${podeCadastrar ? ', com permissão de cadastrar clientes novos' : ''}.` }
 }
 
 export async function removerSocio(formData) {
@@ -77,7 +85,9 @@ export async function removerSocio(formData) {
 }
 
 export async function cadastrarCliente(_estado, formData) {
-  await exigirAdmin()
+  const usuario = await exigirEquipe()
+  const admin = ehAdmin(usuario)
+  if (!admin && !podeCadastrarClientes(usuario)) return { erro: 'Seu acesso não permite cadastrar clientes. Fale com o administrador.' }
   const dados = {
     nome: String(formData.get('nome')).trim(),
     email: String(formData.get('email') || '').trim().toLowerCase(),
@@ -125,6 +135,17 @@ export async function cadastrarCliente(_estado, formData) {
   if (erroCadastro) {
     await supabase.auth.admin.deleteUser(cliente.id)
     return { erro: `Não foi possível salvar o cadastro: ${erroCadastro.message}` }
+  }
+
+  // Cliente cadastrado por sócio já fica liberado para ele (lê o cadastro atual para não perder
+  // liberações feitas pelo administrador enquanto ele estava logado).
+  if (!admin) {
+    const { data: atual } = await supabase.auth.admin.getUserById(usuario.id)
+    const socio = atual?.user || usuario
+    const { error: erroLiberar } = await supabase.auth.admin.updateUserById(socio.id, {
+      app_metadata: { ...socio.app_metadata, clientes: comClienteLiberado(socio, cliente.id) },
+    })
+    if (erroLiberar) console.error('Não foi possível liberar o cliente novo para o sócio:', erroLiberar)
   }
 
   // Com CNPJ, já traz os dados públicos da Receita. Se a consulta falhar, o cadastro continua

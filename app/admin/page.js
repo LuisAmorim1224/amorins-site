@@ -1,6 +1,6 @@
 import Barra from '@/components/Barra'
 import { ehAdmin, exigirEquipe } from '@/lib/auth'
-import { clientesDoSocio, ehSocio, filtrarClientes } from '@/lib/equipe'
+import { clientesDoSocio, ehSocio, filtrarClientes, podeCadastrarClientes } from '@/lib/equipe'
 import Socios from './Socios'
 import { formatarCnpj } from '@/lib/cnpj'
 import { reais } from '@/lib/formato'
@@ -46,6 +46,7 @@ export default async function Admin() {
         nome: u.user_metadata?.nome || u.email,
         clientes: clientesDoSocio(u),
         primeiroAcesso: u.app_metadata?.trocar_senha === true,
+        podeCadastrar: u.app_metadata?.pode_cadastrar === true,
       }))
   }
 
@@ -122,12 +123,14 @@ export default async function Admin() {
             <p className="vazio">Nenhum cliente cadastrado ainda.</p>
           )}
         </div>
+        {(admin || podeCadastrarClientes(user)) && (
+          <div className="caixa">
+            <h2>Cadastrar cliente</h2>
+            <NovoCliente />
+          </div>
+        )}
         {admin && (
           <>
-            <div className="caixa">
-              <h2>Cadastrar cliente</h2>
-              <NovoCliente />
-            </div>
             <div className="caixa">
               <h2>Sócios com acesso ao painel</h2>
               <p className="vazio">O sócio entra pelo mesmo login do site e só vê os clientes marcados.</p>
