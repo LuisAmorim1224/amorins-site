@@ -7,6 +7,7 @@ import GuiasPagamento from '@/components/cliente/GuiasPagamento'
 import { nomeParaMostrar } from '@/lib/arquivos-mes'
 import { dataBR } from '@/lib/formato'
 import { ehGuia, guiasNovas, separarGuias } from '@/lib/guias'
+import { ehArquivoDeTeste, semPedidosDeTeste } from '@/lib/homologacao'
 import EnviarParaEscritorio from '@/components/cliente/EnviarParaEscritorio'
 import ListaPedidos from '@/components/cliente/ListaPedidos'
 import NotasEmitidas from '@/components/cliente/NotasEmitidas'
@@ -51,13 +52,16 @@ export default async function AreaDoCliente() {
 
   const hoje = isoDe(hojeNaBahia())
   const supabase = await createClient()
-  const [{ data: cliente }, documentos, { data: socios }, { data: pedidos }, { data: notas }] = await Promise.all([
+  const [{ data: cliente }, todosDocumentos, { data: socios }, { data: todosPedidos }, { data: notas }] = await Promise.all([
     supabase.from('clientes').select('*').eq('id', user.id).single(),
     listarDocumentos(supabase, user.id),
     supabase.from('socios').select('*').eq('cliente_id', user.id).order('criado_em'),
     supabase.from('pedidos_nota').select('*').eq('cliente_id', user.id).order('criado_em', { ascending: false }).limit(50),
     supabase.from('notas_emitidas').select('*').eq('cliente_id', user.id).order('data_emissao', { ascending: false }).limit(500),
   ])
+  // Notas de teste (homologação) ficam só no painel do escritório.
+  const documentos = todosDocumentos.filter((d) => !ehArquivoDeTeste(d))
+  const pedidos = semPedidosDeTeste(todosPedidos, notas)
   const pendencias = cliente
     ? [...(cliente.pendencias || []), ...pendenciasAutomaticas({ cliente, socios: socios || [], documentos, hoje })]
     : []
