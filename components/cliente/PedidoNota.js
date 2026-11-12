@@ -48,7 +48,8 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
   const [estado, acao, enviando] = useActionState(acaoServidor, {})
   const peloEscritorio = Boolean(clienteId)
   const [sugestao, aoDigitar, limpar] = useSugestao(peloEscritorio ? (t) => sugerir(clienteId, t) : sugerir)
-  const [escolhido, setEscolhido] = useState('')  useEffect(() => {
+  const [escolhido, setEscolhido] = useState('')
+  useEffect(() => {
     if (estado.ok) {
       limpar()
       setEscolhido('')
