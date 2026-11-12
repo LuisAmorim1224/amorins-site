@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import { atualizarClienteAsaas, criarAssinatura, criarClienteAsaas, criarCobrancaAvulsa } from '@/lib/asaas'
 import { numeroWhatsapp } from '@/lib/cobranca-whatsapp'
 import { competenciaValida, nomeNoArmazenamento } from '@/lib/arquivos-mes'
-import { ehAdmin, exigirAcessoCliente, exigirAdmin, exigirEquipe } from '@/lib/auth'
+import { COOKIE_VER_COMO, ehAdmin, exigirAcessoCliente, exigirAdmin, exigirEquipe } from '@/lib/auth'
+import { cookies } from 'next/headers'
 import { comClienteLiberado, PAPEL_SOCIO, podeCadastrarClientes } from '@/lib/equipe'
 import { buscarCnpj, dadosDaReceita, sociosDaReceita } from '@/lib/cnpj'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
@@ -700,6 +701,21 @@ export async function pedirNotaPeloEscritorio(_estado, formData) {
   revalidatePath(`/admin/clientes/${clienteId}`)
   revalidatePath('/cliente')
   return { ok: 'Pedido criado. Ele aparece em "Pedidos de nota fiscal" com o botão Emitir NFS-e.' }
+}
+
+// Abre a Área do Cliente como se fosse o cliente, para testar (nada é enviado de verdade).
+export async function entrarComoCliente(formData) {
+  const id = String(formData.get('cliente_id') || '')
+  await exigirAcessoCliente(id)
+  ;(await cookies()).set(COOKIE_VER_COMO, id, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 2 * 60 * 60 })
+  redirect('/cliente')
+}
+
+export async function sairDoModoCliente() {
+  const store = await cookies()
+  const id = store.get(COOKIE_VER_COMO)?.value
+  store.delete(COOKIE_VER_COMO)
+  redirect(id ? `/admin/clientes/${id}` : '/admin')
 }
 
 // Mostra no formulário do escritório qual código a nota vai usar, pela descrição digitada.

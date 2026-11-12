@@ -16,6 +16,7 @@ const texto = (v, max = 500) => String(v || '').trim().slice(0, max)
 // Autoriza o navegador a enviar o arquivo direto para a pasta do próprio cliente.
 export async function autorizarEnvioCliente(nomeArquivo) {
   const user = await exigirCliente()
+  if (user.teste) throw new Error('Modo teste: o arquivo não foi enviado.')
   const caminho = `${user.id}/${nomeSeguro(nomeArquivo)}`
   const { data, error } = await createAdminClient().storage.from(PASTA).createSignedUploadUrl(caminho, { upsert: false })
   if (error) throw new Error(error.message.includes('exists') ? 'Já existe um arquivo com esse nome.' : error.message)
@@ -24,6 +25,7 @@ export async function autorizarEnvioCliente(nomeArquivo) {
 
 export async function registrarEnvioCliente(caminho, tipo) {
   const user = await exigirCliente()
+  if (user.teste) throw new Error('Modo teste: o arquivo não foi enviado.')
   if (!caminho.startsWith(`${user.id}/`)) throw new Error('Caminho de arquivo inválido.')
   await createAdminClient()
     .from('documentos_info')
@@ -42,8 +44,9 @@ export async function sugerirServicoCliente(descricao) {
 export async function pedirNota(_estado, formData) {
   const user = await exigirCliente()
   const supabase = createAdminClient()
-  const r = await criarPedido(supabase, user.id, formData)
+  const r = await criarPedido(supabase, user.id, formData, { simular: user.teste })
   if (r.erro) return { erro: r.erro }
+  if (r.simulado) return { ok: resumoSimulacao(r) }
 
   if (r.cliente?.nfse_ativa && r.cliente.nfse_emissao_automatica && r.servico) {
     const e = await emitirPedido(supabase, r.id).catch((err) => ({ erro: err.message }))
@@ -57,10 +60,24 @@ export async function pedirNota(_estado, formData) {
   return { ok: 'Pedido enviado! O escritório vai emitir a nota e ela aparece aqui em "Notas fiscais".' }
 }
 
+function resumoSimulacao({ pedido, cliente, servico, motivo }) {
+  const valor = Number(pedido.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const cod = servico ? `${servico.cod_trib_nac.replace(/^(\d{2})(\d{2})(\d{2})$/, '$1.$2.$3')} · ${servico.nome}` : 'sem código (o escritório escolheria)'
+  const destino = !cliente?.nfse_ativa
+    ? 'O escritório emitiria manualmente.'
+    : cliente.nfse_emissao_automatica && servico
+      ? `Seria emitida na hora, em ${cliente.nfse_ambiente === 'producao' ? 'PRODUÇÃO' : 'homologação'}.`
+      : 'Ficaria esperando o escritório.'
+  return `MODO TESTE, nada foi enviado. A nota sairia para ${pedido.tomador_nome}, valor ${valor}, código ${cod}. ${motivo || ''} ${destino}`
+}
+
+const NADA_ENVIADO = 'Modo teste: nada foi enviado.'
+
 // ---------- Notas emitidas lançadas pelo cliente ----------
 
 export async function lancarNota(_estado, formData) {
   const user = await exigirCliente()
+  if (user.teste) return { ok: NADA_ENVIADO }
   const nota = {
     cliente_id: user.id,
     numero: texto(formData.get('numero'), 50) || null,
@@ -85,6 +102,7 @@ export async function lancarNota(_estado, formData) {
 
 export async function excluirNotaLancada(formData) {
   const user = await exigirCliente()
+  if (user.teste) return
   // O cliente só apaga notas que ele mesmo lançou.
   await createAdminClient()
     .from('notas_emitidas')

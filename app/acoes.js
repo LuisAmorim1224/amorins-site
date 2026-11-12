@@ -3,7 +3,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { ehEquipe, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { COOKIE_VER_COMO, ehEquipe, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { cookies } from 'next/headers'
 import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha } from '@/lib/login'
 import { validarRecomendacao } from '@/lib/recomendacoes'
 
@@ -25,6 +26,7 @@ export async function entrar(_estado, formData) {
 export async function sair() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  ;(await cookies()).delete(COOKIE_VER_COMO)
   redirect('/login')
 }
 

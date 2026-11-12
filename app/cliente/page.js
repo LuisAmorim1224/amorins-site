@@ -18,7 +18,9 @@ import FichaCadastral from '@/components/FichaCadastral'
 import PrimeiroAcesso from '@/components/PrimeiroAcesso'
 import TrocarSenha from '@/components/TrocarSenha'
 import { cobrancaEmAberto, listarCobrancas } from '@/lib/asaas'
-import { ehEquipe, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { clienteEmTeste, ehEquipe, getUsuario, precisaTrocarSenha } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { sairDoModoCliente } from '@/app/admin/acoes'
 import { linkWhatsapp } from '@/lib/contato'
 import { listarDocumentos } from '@/lib/documentos'
 import { isoDe, pendenciasAutomaticas } from '@/lib/ficha'
@@ -31,12 +33,16 @@ export const metadata = { title: 'Área do Cliente · Amorins Contábil' }
 const caminhosDeNotas = (notas) => new Set((notas || []).flatMap((n) => [n.caminho_arquivo, n.caminho_xml]).filter(Boolean))
 
 export default async function AreaDoCliente() {
-  const user = await getUsuario()
-  if (!user) redirect('/login')
-  if (ehEquipe(user)) redirect('/admin')
+  const usuario = await getUsuario()
+  if (!usuario) redirect('/login')
+  // Equipe só entra aqui no modo "ver como cliente", com os dados do cliente escolhido.
+  const idTeste = await clienteEmTeste(usuario)
+  if (ehEquipe(usuario) && !idTeste) redirect('/admin')
+  const teste = Boolean(idTeste)
+  const user = teste ? { id: idTeste } : usuario
 
   // Ainda com a senha inicial: mostra só a criação de senha, sem buscar nenhum dado.
-  if (precisaTrocarSenha(user)) {
+  if (!teste && precisaTrocarSenha(user)) {
     return (
       <>
         <Barra titulo="Área do Cliente" inicio="/cliente" />
@@ -51,7 +57,7 @@ export default async function AreaDoCliente() {
   }
 
   const hoje = isoDe(hojeNaBahia())
-  const supabase = await createClient()
+  const supabase = teste ? createAdminClient() : await createClient()
   const [{ data: cliente }, todosDocumentos, { data: socios }, { data: todosPedidos }, { data: notas }] = await Promise.all([
     supabase.from('clientes').select('*').eq('id', user.id).single(),
     listarDocumentos(supabase, user.id),
@@ -103,6 +109,14 @@ export default async function AreaDoCliente() {
         <a href="#empresa">Sua empresa</a>
         <a href="#honorarios">Honorários</a>
       </nav>
+      {teste && (
+        <form action={sairDoModoCliente} className="modo-teste">
+          <span>
+            👁 <strong>Modo teste:</strong> você está vendo a área de {nome}. Nada que você fizer aqui é enviado de verdade.
+          </span>
+          <button>Sair do modo cliente</button>
+        </form>
+      )}
       <main className="painel">
         <div id="inicio">
           <h1>Olá, {nome}!</h1>
@@ -175,10 +189,12 @@ export default async function AreaDoCliente() {
           <Cobrancas cobrancas={cobrancas} erro={erroCobrancas} />
         </div>
 
-        <div className="caixa">
-          <h2>Trocar senha</h2>
-          <TrocarSenha />
-        </div>
+        {!teste && (
+          <div className="caixa">
+            <h2>Trocar senha</h2>
+            <TrocarSenha />
+          </div>
+        )}
       </main>
     </>
   )

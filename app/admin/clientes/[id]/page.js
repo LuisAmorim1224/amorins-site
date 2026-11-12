@@ -12,7 +12,7 @@ import { anexoDoServico } from '@/lib/simples'
 import { servicosDosCnaes } from '@/lib/cnae-servicos'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
-import { excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio, sugerirServicoEscritorio } from '../../acoes'
+import { entrarComoCliente, excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio, sugerirServicoEscritorio } from '../../acoes'
 import PedidoNota from '@/components/cliente/PedidoNota'
 import LinksNota from '@/components/cliente/LinksNota'
 import AtivarCobranca from './AtivarCobranca'
@@ -94,6 +94,10 @@ export default async function Cliente({ params }) {
             {cliente.asaas_subscription_id &&
               ` · ${reais(cliente.valor_honorario)} todo dia ${cliente.dia_vencimento}`}
           </p>
+          <form action={entrarComoCliente}>
+            <input type="hidden" name="cliente_id" value={id} />
+            <button>👁 Ver como o cliente (modo teste)</button>
+          </form>
         </div>
         <div className="caixa">
           <h2>Acesso à Área do Cliente</h2>
