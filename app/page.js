@@ -40,6 +40,7 @@ export default async function Inicio() {
             Amorins Contábil
           </a>
           <nav>
+            <a href="#apresentacao">Apresentação</a>
             <a href="#regularizacao">Regularização de CNPJ</a>
             <a href="#servicos">Serviços</a>
             <a href="#recomendacoes">Recomendações</a>
@@ -90,6 +91,23 @@ export default async function Inicio() {
           <div><strong>Desde 2017</strong><span>cuidando de empresas</span></div>
         </div>
       </div>
+
+      <section className="secao branca video-apresentacao" id="apresentacao">
+        <div className="conteudo">
+          <p className="rotulo">Conheça a Amorins</p>
+          <h2>Quem somos e como podemos ajudar a sua empresa</h2>
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            poster="/videos/apresentacao-capa.jpg"
+            src="/videos/apresentacao.mp4"
+          >
+            Seu navegador não reproduz vídeos. Fale com a gente pelo WhatsApp.
+          </video>
+          <p className="nota-video">Vídeo criado com inteligência artificial a partir da imagem e da voz do Luis Amorim.</p>
+        </div>
+      </section>
 
       <section className="secao" id="regularizacao">
         <div className="conteudo destaque-cnpj">

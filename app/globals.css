@@ -67,6 +67,9 @@ a { color: var(--azul); }
 .secao { padding: 80px 20px; }
 .secao .conteudo { max-width: 1120px; margin: auto; }
 .secao.branca { background: #fff; }
+.video-apresentacao .conteudo { text-align: center; }
+.video-apresentacao video { display: block; width: 100%; max-width: 880px; aspect-ratio: 16 / 9; margin: 8px auto 0; background: #fff; border-radius: 12px; }
+.video-apresentacao .nota-video { margin-top: 10px; font-size: 0.8em; color: var(--texto-suave); }
 .secao .rotulo { font-size: 0.8em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--azul-vivo); font-weight: 600; margin-bottom: 8px; }
 .secao h2 { font-size: clamp(1.6em, 3vw, 2.2em); color: #0b1f4d; margin-bottom: 14px; line-height: 1.2; }
 .secao p.intro { color: var(--texto-suave); max-width: 720px; margin-bottom: 36px; font-size: 1.05em; }
