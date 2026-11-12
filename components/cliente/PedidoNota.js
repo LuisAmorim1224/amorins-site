@@ -48,13 +48,10 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
   const [estado, acao, enviando] = useActionState(acaoServidor, {})
   const peloEscritorio = Boolean(clienteId)
   const [sugestao, aoDigitar, limpar] = useSugestao(peloEscritorio ? (t) => sugerir(clienteId, t) : sugerir)
-  const [escolhido, setEscolhido] = useState('')
-  const [documento, setDocumento] = useState('')
-  useEffect(() => {
+  const [escolhido, setEscolhido] = useState('')  useEffect(() => {
     if (estado.ok) {
       limpar()
       setEscolhido('')
-      setDocumento('')
     }
   }, [estado.ok])
   return (
@@ -62,7 +59,7 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
       {peloEscritorio ? (
         <input type="hidden" name="cliente_id" value={clienteId} />
       ) : (
-        <p className="vazio">Informe o CNPJ de quem recebe a nota, o valor e a descrição. A nota sai com o mesmo código da sua nota anterior parecida.</p>
+        <p className="vazio">Informe o CNPJ, o valor e a descrição da nota.</p>
       )}
       {peloEscritorio && servicos?.length > 0 && (
         <label>
@@ -79,30 +76,29 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
       )}
       <div className="duas">
         <label>
-          CNPJ (ou CPF) de quem vai receber a nota
+          CNPJ de quem vai receber a nota
           <input
             name="tomador_documento"
             required
             inputMode="numeric"
             placeholder="00.000.000/0000-00"
-            onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))}
           />
         </label>
         <label>
           Valor da nota (R$)
           <input name="valor" required inputMode="decimal" placeholder="1.500,00" />
         </label>
-        {(peloEscritorio || documento.length === 11) && (
-          <label>
-            {peloEscritorio ? 'Nome ou razão social (em branco: busca pelo CNPJ)' : 'Nome completo (CPF)'}
-            <input name="tomador_nome" required={!peloEscritorio} />
-          </label>
-        )}
         {peloEscritorio && (
-          <label>
-            E-mail do cliente (opcional)
-            <input name="tomador_email" type="email" placeholder="financeiro@empresa.com.br" />
-          </label>
+          <>
+            <label>
+              Nome ou razão social (em branco: busca pelo CNPJ)
+              <input name="tomador_nome" />
+            </label>
+            <label>
+              E-mail do cliente (opcional)
+              <input name="tomador_email" type="email" placeholder="financeiro@empresa.com.br" />
+            </label>
+          </>
         )}
       </div>
       <label>
