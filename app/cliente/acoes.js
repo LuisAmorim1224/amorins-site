@@ -62,7 +62,8 @@ export async function pedirNota(_estado, formData) {
 
 function resumoSimulacao({ pedido, cliente, servico, motivo }) {
   const valor = Number(pedido.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  const cod = servico ? `${servico.cod_trib_nac.replace(/^(\d{2})(\d{2})(\d{2})$/, '$1.$2.$3')} · ${servico.nome}` : 'sem código (o escritório escolheria)'
+  const cod = servico
+    ? `${servico.cod_trib_nac.replace(/^(\d{2})(\d{2})(\d{2})$/, '$1.$2.$3')}${servico.cod_trib_mun ? `/${servico.cod_trib_mun}` : ''} · ${servico.nome}` : 'sem código (o escritório escolheria)'
   const destino = !cliente?.nfse_ativa
     ? 'O escritório emitiria manualmente.'
     : cliente.nfse_emissao_automatica && servico

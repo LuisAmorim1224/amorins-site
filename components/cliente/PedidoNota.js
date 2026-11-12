@@ -28,7 +28,11 @@ function Sugestao({ sugestao, peloEscritorio, escolhido }) {
   if (sugestao.codigo) {
     return (
       <p className="sugestao-servico">
-        Código do serviço: <strong>{codigo(sugestao.codigo)} · {sugestao.nome}</strong>
+        Código do serviço:{' '}
+        <strong>
+          {codigo(sugestao.codigo)}
+          {sugestao.codigoMunicipal ? `/${sugestao.codigoMunicipal}` : ''} · {sugestao.nome}
+        </strong>
         <br />
         <span className="info">{sugestao.motivo}</span>
       </p>
