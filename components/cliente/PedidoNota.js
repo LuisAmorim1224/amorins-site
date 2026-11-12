@@ -1,14 +1,60 @@
 'use client'
 
-import { useActionState } from 'react'
-import { pedirNota } from '@/app/cliente/acoes'
+import { useActionState, useEffect, useRef, useState } from 'react'
+import { pedirNota, sugerirServicoCliente } from '@/app/cliente/acoes'
 
 const codigo = (c) => `${c.slice(0, 2)}.${c.slice(2, 4)}.${c.slice(4, 6)}`
 
-// Pedido de nota. No /admin o escritório usa o mesmo formulário com `acaoServidor`, `clienteId` e `servicos`.
-export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servicos }) {
+// Enquanto a descrição é digitada, consulta as notas anteriores e mostra o código que a nota vai usar.
+function useSugestao(buscar) {
+  const [sugestao, setSugestao] = useState(null)
+  const espera = useRef(null)
+  const ultima = useRef(0)
+  useEffect(() => () => clearTimeout(espera.current), [])
+  function aoDigitar(texto) {
+    clearTimeout(espera.current)
+    if (texto.trim().length < 6) return setSugestao(null)
+    espera.current = setTimeout(async () => {
+      const vez = ++ultima.current
+      const r = await buscar(texto).catch(() => null)
+      if (vez === ultima.current) setSugestao(r)
+    }, 600)
+  }
+  return [sugestao, aoDigitar, () => setSugestao(null)]
+}
+
+function Sugestao({ sugestao, peloEscritorio, escolhido }) {
+  if (!sugestao || escolhido) return null
+  if (sugestao.codigo) {
+    return (
+      <p className="sugestao-servico">
+        Código do serviço: <strong>{codigo(sugestao.codigo)} · {sugestao.nome}</strong>
+        <br />
+        <span className="info">{sugestao.motivo}</span>
+      </p>
+    )
+  }
+  if (!peloEscritorio) return null
+  return (
+    <p className="sugestao-servico atencao">
+      {sugestao.motivo} Escolha o serviço acima
+      {sugestao.candidatos?.length ? ` (possíveis: ${sugestao.candidatos.map((c) => codigo(c.codigo)).join(', ')})` : ''}.
+    </p>
+  )
+}
+
+// Pedido de nota. No /admin o escritório usa o mesmo formulário com `acaoServidor`, `clienteId`, `servicos` e `sugerir`.
+export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servicos, sugerir = sugerirServicoCliente }) {
   const [estado, acao, enviando] = useActionState(acaoServidor, {})
   const peloEscritorio = Boolean(clienteId)
+  const [sugestao, aoDigitar, limpar] = useSugestao(peloEscritorio ? (t) => sugerir(clienteId, t) : sugerir)
+  const [escolhido, setEscolhido] = useState('')
+  useEffect(() => {
+    if (estado.ok) {
+      limpar()
+      setEscolhido('')
+    }
+  }, [estado.ok])
   return (
     <form action={acao} className="formulario" key={estado.ok || 'pedido'}>
       {peloEscritorio ? (
@@ -19,7 +65,7 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
       {peloEscritorio && servicos?.length > 0 && (
         <label>
           Serviço da nota
-          <select name="servico_id" defaultValue="">
+          <select name="servico_id" defaultValue="" onChange={(e) => setEscolhido(e.target.value)}>
             <option value="">Sugerir pelas notas anteriores</option>
             {servicos.map((s) => (
               <option key={s.id} value={s.id}>
@@ -53,8 +99,15 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
       </label>
       <label>
         Descrição do serviço ou produto
-        <textarea name="descricao" rows={3} required placeholder="Ex.: Consultoria em tecnologia referente a outubro/2026" />
+        <textarea
+          name="descricao"
+          rows={3}
+          required
+          placeholder="Ex.: Consultoria em tecnologia referente a outubro/2026"
+          onChange={(e) => aoDigitar(e.target.value)}
+        />
       </label>
+      <Sugestao sugestao={sugestao} peloEscritorio={peloEscritorio} escolhido={escolhido} />
       <div className="duas">
         <label>
           Data em que precisa da nota (opcional)

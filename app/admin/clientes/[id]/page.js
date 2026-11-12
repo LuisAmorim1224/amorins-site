@@ -12,7 +12,7 @@ import { anexoDoServico } from '@/lib/simples'
 import { servicosDosCnaes } from '@/lib/cnae-servicos'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hojeNaBahia } from '@/lib/vencimento'
-import { excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio } from '../../acoes'
+import { excluirDocumento, excluirNotaEmitida, pedirNotaPeloEscritorio, sugerirServicoEscritorio } from '../../acoes'
 import PedidoNota from '@/components/cliente/PedidoNota'
 import LinksNota from '@/components/cliente/LinksNota'
 import AtivarCobranca from './AtivarCobranca'
@@ -122,7 +122,7 @@ export default async function Cliente({ params }) {
           <h2>Pedidos de nota fiscal</h2>
           <details>
             <summary>Novo pedido de nota (pelo escritório)</summary>
-            <PedidoNota acaoServidor={pedirNotaPeloEscritorio} clienteId={id} servicos={servicos || []} />
+            <PedidoNota acaoServidor={pedirNotaPeloEscritorio} sugerir={sugerirServicoEscritorio} clienteId={id} servicos={servicos || []} />
           </details>
           <ListaPedidos pedidos={pedidos || []} acoes={AcoesPedido} servicos={{ [id]: servicos || [] }} />
         </div>

@@ -13,8 +13,9 @@ import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
-import { atualizarNotasDeTodos, conferirCodigosNoMunicipio, emitirPedido, importarNotasAnteriores, salvarCertificado } from '@/lib/nfse'
+import { atualizarNotasDeTodos, conferirCodigosNoMunicipio, emitirPedido, importarNotasAnteriores, salvarCertificado, sugerirServicoDoPedido } from '@/lib/nfse'
 import { criarPedido } from '@/lib/pedidos'
+import { resumoSugestao } from '@/lib/servicos'
 
 const somenteNumeros = (texto) => String(texto || '').replace(/\D/g, '')
 
@@ -699,6 +700,13 @@ export async function pedirNotaPeloEscritorio(_estado, formData) {
   revalidatePath(`/admin/clientes/${clienteId}`)
   revalidatePath('/cliente')
   return { ok: 'Pedido criado. Ele aparece em "Pedidos de nota fiscal" com o botão Emitir NFS-e.' }
+}
+
+// Mostra no formulário do escritório qual código a nota vai usar, pela descrição digitada.
+export async function sugerirServicoEscritorio(clienteId, descricao) {
+  await exigirAcessoCliente(String(clienteId || ''))
+  const r = await sugerirServicoDoPedido(createAdminClient(), String(clienteId), String(descricao || '').slice(0, 1000))
+  return resumoSugestao(r)
 }
 
 // Botão do /admin: baixa agora as notas novas de todos os clientes com certificado.

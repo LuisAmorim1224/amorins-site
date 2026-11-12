@@ -5,8 +5,9 @@ import { exigirCliente } from '@/lib/auth'
 import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { tipoDocumento } from '@/lib/ficha'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { emitirPedido } from '@/lib/nfse'
+import { emitirPedido, sugerirServicoDoPedido } from '@/lib/nfse'
 import { criarPedido, dataValida, valorEmReais } from '@/lib/pedidos'
+import { resumoSugestao } from '@/lib/servicos'
 
 const texto = (v, max = 500) => String(v || '').trim().slice(0, max)
 
@@ -31,6 +32,12 @@ export async function registrarEnvioCliente(caminho, tipo) {
 }
 
 // ---------- Pedido de nota fiscal ----------
+
+// Mostra, enquanto o cliente digita, qual código de serviço a nota vai usar.
+export async function sugerirServicoCliente(descricao) {
+  const user = await exigirCliente()
+  return resumoSugestao(await sugerirServicoDoPedido(createAdminClient(), user.id, texto(descricao, 1000)))
+}
 
 export async function pedirNota(_estado, formData) {
   const user = await exigirCliente()

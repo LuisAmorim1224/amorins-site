@@ -255,3 +255,7 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
 .form-recomendacao button { justify-self: start; border: none; cursor: pointer; }
 .recomendacao-enviada { color: #2e7d32; font-weight: 600; }
 @media (max-width: 640px) { .form-recomendacao .duas { grid-template-columns: 1fr; } }
+
+/* Código do serviço sugerido no pedido de nota */
+.sugestao-servico { margin: -4px 0 4px; padding: 10px 12px; border-radius: 8px; background: rgba(46, 125, 50, 0.08); border-left: 3px solid #2e7d32; font-size: 0.92rem; }
+.sugestao-servico.atencao { background: rgba(237, 108, 2, 0.08); border-left-color: #ed6c02; }
