@@ -165,7 +165,7 @@ export default function PedidoNota({ acaoServidor = pedirNota, clienteId, servic
       {estado.erro && <p className="erro">{estado.erro}</p>}
       {estado.ok && <p className="ok">{estado.ok}</p>}
       <div>
-        <button disabled={enviando}>{enviando ? 'Enviando...' : peloEscritorio ? 'Criar pedido' : 'Enviar pedido de nota'}</button>
+        <button disabled={enviando}>{enviando ? (peloEscritorio ? 'Enviando...' : 'Emitindo...') : peloEscritorio ? 'Criar pedido' : 'Emitir nota fiscal'}</button>
       </div>
     </form>
   )

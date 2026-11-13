@@ -7,7 +7,7 @@ import { dataBR, reais } from '@/lib/formato'
 import LinksNota from '@/components/cliente/LinksNota'
 
 // `podeLancar`: só para quem NÃO emite pelo portal. Quem emite pelo portal pede a nota em
-// "Pedir nota fiscal" e as notas entram aqui sozinhas (o site busca no Emissor Nacional todo dia).
+// "Emitir nota fiscal" e as notas entram aqui sozinhas (o site busca no Emissor Nacional todo dia).
 export default function NotasEmitidas({ notas, documentos = [], podeLancar = true }) {
   const [mensagem, setMensagem] = useState(null)
   const [salvando, iniciar] = useTransition()

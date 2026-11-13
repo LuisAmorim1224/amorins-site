@@ -147,7 +147,7 @@ export default async function AreaDoCliente() {
         </div>
 
         <div className="caixa" id="notas">
-          <h2>Pedir nota fiscal</h2>
+          <h2>Emitir nota fiscal</h2>
           <PedidoNota />
           <h3 className="subtitulo">Seus pedidos</h3>
           <ListaPedidos pedidos={pedidos || []} />
