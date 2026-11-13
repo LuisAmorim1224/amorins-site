@@ -6,7 +6,9 @@ import { enviarArquivoDoCliente } from '@/components/cliente/EnviarParaEscritori
 import { dataBR, reais } from '@/lib/formato'
 import LinksNota from '@/components/cliente/LinksNota'
 
-export default function NotasEmitidas({ notas, documentos = [] }) {
+// `podeLancar`: só para quem NÃO emite pelo portal. Quem emite pelo portal pede a nota em
+// "Pedir nota fiscal" e as notas entram aqui sozinhas (o site busca no Emissor Nacional todo dia).
+export default function NotasEmitidas({ notas, documentos = [], podeLancar = true }) {
   const [mensagem, setMensagem] = useState(null)
   const [salvando, iniciar] = useTransition()
 
@@ -32,6 +34,7 @@ export default function NotasEmitidas({ notas, documentos = [] }) {
 
   return (
     <div className="formulario">
+      {podeLancar && (
       <form onSubmit={salvar} className="formulario">
         <p className="vazio">Emitiu uma nota por conta própria? Lance aqui para entrar na prévia de impostos.</p>
         <div className="duas">
@@ -62,6 +65,7 @@ export default function NotasEmitidas({ notas, documentos = [] }) {
           <button disabled={salvando}>{salvando ? 'Salvando...' : 'Lançar nota'}</button>
         </div>
       </form>
+      )}
 
       {notas.length ? (
         <ul className="lista">

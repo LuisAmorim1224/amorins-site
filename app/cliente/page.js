@@ -157,7 +157,7 @@ export default async function AreaDoCliente() {
           <h2>Faturamento e prévia de impostos</h2>
           {cliente && <PreviaImpostos cliente={cliente} notas={notas || []} hoje={hoje} />}
           <h3 className="subtitulo">Notas emitidas</h3>
-          <NotasEmitidas notas={notas || []} documentos={documentos} />
+          <NotasEmitidas notas={notas || []} documentos={documentos} podeLancar={!cliente?.nfse_ativa} />
         </div>
 
         <div className="caixa" id="arquivos-mes">

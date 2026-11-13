@@ -79,6 +79,8 @@ const NADA_ENVIADO = 'Modo teste: nada foi enviado.'
 export async function lancarNota(_estado, formData) {
   const user = await exigirCliente()
   if (user.teste) return { ok: NADA_ENVIADO }
+  const { data: cliente } = await createAdminClient().from('clientes').select('nfse_ativa').eq('id', user.id).single()
+  if (cliente?.nfse_ativa) return { erro: 'Para emitir uma nota, use "Pedir nota fiscal".' }
   const nota = {
     cliente_id: user.id,
     numero: texto(formData.get('numero'), 50) || null,
