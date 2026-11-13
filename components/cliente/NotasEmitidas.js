@@ -11,6 +11,9 @@ import LinksNota from '@/components/cliente/LinksNota'
 export default function NotasEmitidas({ notas, documentos = [], podeLancar = true }) {
   const [mensagem, setMensagem] = useState(null)
   const [salvando, iniciar] = useTransition()
+  // Mostra só as 5 últimas; o botão abre as demais.
+  const [todas, setTodas] = useState(false)
+  const visiveis = todas ? notas : notas.slice(0, 5)
 
   function salvar(evento) {
     evento.preventDefault()
@@ -69,7 +72,7 @@ export default function NotasEmitidas({ notas, documentos = [], podeLancar = tru
 
       {notas.length ? (
         <ul className="lista">
-          {notas.map((n) => (
+          {visiveis.map((n) => (
             <li key={n.id}>
               <div>
                 <strong>{reais(n.valor)}</strong> · {dataBR(n.data_emissao)}
@@ -89,7 +92,15 @@ export default function NotasEmitidas({ notas, documentos = [], podeLancar = tru
             </li>
           ))}
         </ul>
-      ) : (
+      ) : null}
+      {notas.length > 5 && (
+        <div>
+          <button type="button" onClick={() => setTodas(!todas)}>
+            {todas ? 'Mostrar só as 5 últimas' : `Ver todas as notas (${notas.length})`}
+          </button>
+        </div>
+      )}
+      {notas.length ? null : (
         <p className="vazio">Nenhuma nota lançada ainda.</p>
       )}
     </div>
