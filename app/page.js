@@ -1,7 +1,9 @@
 import FormRecomendacao from '@/components/site/FormRecomendacao'
 import { assinatura } from '@/lib/recomendacoes'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { EMAIL, linkWhatsapp, TELEFONE, YOUTUBE } from '@/lib/contato'
+import { EMAIL, linkWhatsapp, TELEFONE, WHATSAPP, YOUTUBE } from '@/lib/contato'
+import { ARTIGOS } from '@/lib/artigos'
+import { SITE_URL } from '@/lib/site'
 
 // Fundo da página inicial: 'fundo-grade' (tecnológico escuro), 'fundo-dados' (gráficos) ou 'fundo-claro'.
 const FUNDO = 'fundo-grade'
@@ -29,6 +31,24 @@ async function recomendacoesAprovadas() {
   }
 }
 
+// Dados da empresa no formato que o Google entende (aparecem melhor na busca).
+const DADOS_GOOGLE = {
+  '@context': 'https://schema.org',
+  '@type': 'AccountingService',
+  name: 'Amorins Contábil',
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  image: `${SITE_URL}/logo.png`,
+  telephone: `+${WHATSAPP}`,
+  email: EMAIL,
+  areaServed: { '@type': 'Country', name: 'Brasil' },
+  address: { '@type': 'PostalAddress', addressLocality: 'Salvador', addressRegion: 'BA', addressCountry: 'BR' },
+  founder: { '@type': 'Person', name: 'Luis Amorim', jobTitle: 'Contador, CRC-BA 039792/O-0' },
+  foundingDate: '2017',
+  sameAs: ['https://www.instagram.com/amorinscontabil', YOUTUBE],
+  knowsAbout: ['Regularização de CNPJ', 'MEI', 'Simples Nacional', 'Imposto de Renda', 'Perícia contábil', 'Cálculos trabalhistas'],
+}
+
 export default async function Inicio() {
   const recomendacoes = await recomendacoesAprovadas()
   return (
@@ -45,6 +65,7 @@ export default async function Inicio() {
             <a href="#servicos">Serviços</a>
             <a href="#recomendacoes">Recomendações</a>
             <a href="#historia">Quem sou</a>
+            <a href="/artigos">Artigos</a>
             <a href="#contato">Contato</a>
             <a href="/login" className="btn-area">Área do Cliente</a>
           </nav>
@@ -320,6 +341,22 @@ export default async function Inicio() {
         </div>
       </section>
 
+      <section className="secao" id="artigos">
+        <div className="conteudo">
+          <p className="rotulo">Artigos</p>
+          <h2>Dúvidas comuns de quem tem empresa</h2>
+          <div className="lista-artigos">
+            {ARTIGOS.map((a) => (
+              <a key={a.slug} href={`/artigos/${a.slug}`} className="card-artigo">
+                <h3>{a.titulo}</h3>
+                <p>{a.descricao}</p>
+                <span>Ler artigo →</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="secao branca" id="contato">
         <div className="conteudo">
           <p className="rotulo">Contato</p>
@@ -344,6 +381,7 @@ export default async function Inicio() {
       <a href={linkWhatsapp()} className="whatsapp-flutuante" target="_blank" rel="noreferrer">
         WhatsApp
       </a>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(DADOS_GOOGLE) }} />
     </>
   )
 }
