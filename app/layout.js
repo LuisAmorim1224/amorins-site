@@ -19,10 +19,8 @@ export const metadata = {
     description: DESCRICAO,
     images: [{ url: '/logo.png', width: 512, height: 512, alt: 'Logo Amorins Contábil' }],
   },
-  // Código de verificação do Google Search Console (variável na Vercel).
-  verification: process.env.GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
-    : undefined,
+  // Código de verificação do Google Search Console (conta amorinscontabil). Não remover.
+  verification: { google: 'AjPL5QaMtwNFIx-BgpSXAXx1Q_ECWdmSsGuSjrV5JK8' },
 }
 
 export default function RootLayout({ children }) {
