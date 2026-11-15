@@ -1,5 +1,5 @@
 import { TopoSimples, RodapeSimples } from '@/components/site/TopoSimples'
-import { ARTIGOS } from '@/lib/artigos'
+import { artigosPublicados } from '@/lib/artigos'
 import { linkWhatsapp } from '@/lib/contato'
 
 export const metadata = {
@@ -9,7 +9,11 @@ export const metadata = {
   alternates: { canonical: '/artigos' },
 }
 
+// Refeita a cada hora, para mostrar o artigo do dia.
+export const revalidate = 3600
+
 export default function Artigos() {
+  const artigos = artigosPublicados()
   return (
     <>
       <TopoSimples />
@@ -18,7 +22,7 @@ export default function Artigos() {
           <p className="rotulo">Artigos</p>
           <h1 className="titulo-pagina">Dúvidas de quem tem empresa, respondidas por um contador</h1>
           <div className="lista-artigos">
-            {ARTIGOS.map((a) => (
+            {artigos.map((a) => (
               <a key={a.slug} href={`/artigos/${a.slug}`} className="card-artigo">
                 <h2>{a.titulo}</h2>
                 <p>{a.descricao}</p>
