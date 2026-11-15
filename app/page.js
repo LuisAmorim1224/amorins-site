@@ -2,7 +2,7 @@ import FormRecomendacao from '@/components/site/FormRecomendacao'
 import { assinatura } from '@/lib/recomendacoes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EMAIL, linkWhatsapp, TELEFONE, WHATSAPP, YOUTUBE } from '@/lib/contato'
-import { ARTIGOS } from '@/lib/artigos'
+import { artigosPublicados } from '@/lib/artigos'
 import { SITE_URL } from '@/lib/site'
 
 // Fundo da página inicial: 'fundo-grade' (tecnológico escuro), 'fundo-dados' (gráficos) ou 'fundo-claro'.
@@ -346,7 +346,7 @@ export default async function Inicio() {
           <p className="rotulo">Artigos</p>
           <h2>Dúvidas comuns de quem tem empresa</h2>
           <div className="lista-artigos">
-            {ARTIGOS.map((a) => (
+            {artigosPublicados().slice(0, 6).map((a) => (
               <a key={a.slug} href={`/artigos/${a.slug}`} className="card-artigo">
                 <h3>{a.titulo}</h3>
                 <p>{a.descricao}</p>
@@ -354,6 +354,7 @@ export default async function Inicio() {
               </a>
             ))}
           </div>
+          <p style={{ marginTop: 20 }}><a href="/artigos">Ver todos os artigos →</a></p>
         </div>
       </section>
 

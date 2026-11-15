@@ -1,11 +1,15 @@
 import { notFound } from 'next/navigation'
 import { TopoSimples, RodapeSimples } from '@/components/site/TopoSimples'
-import { ARTIGOS, buscarArtigo } from '@/lib/artigos'
+import { artigosPublicados, buscarArtigo } from '@/lib/artigos'
 import { linkWhatsapp } from '@/lib/contato'
 import { SITE_URL } from '@/lib/site'
 
+// Artigos agendados aparecem sozinhos no dia: a página é gerada na primeira visita.
+export const revalidate = 3600
+export const dynamicParams = true
+
 export function generateStaticParams() {
-  return ARTIGOS.map((a) => ({ slug: a.slug }))
+  return artigosPublicados().map((a) => ({ slug: a.slug }))
 }
 
 export async function generateMetadata({ params }) {
