@@ -312,3 +312,17 @@ footer.rodape p + p { margin-top: 8px; }
 .texto-legal h2 { font-size: 1.2em; color: #0b1f4d; margin: 28px 0 8px; }
 .texto-legal p, .texto-legal li { margin-bottom: 10px; color: #2b3550; }
 .texto-legal ul { padding-left: 22px; }
+
+/* Página /recomendar (link enviado aos clientes) */
+.pagina-recomendar .conteudo { max-width: 760px; }
+.pagina-recomendar .intro { margin-bottom: 12px; }
+.pagina-recomendar .ideias { padding-left: 22px; color: var(--texto-suave); margin-bottom: 24px; display: grid; gap: 4px; }
+.pagina-recomendar .alternativa-whats { margin-top: 20px; color: var(--texto-suave); }
+.pagina-recomendar .alternativa-whats a { color: #1a8f47; font-weight: 600; }
+
+/* Foto do cliente nas recomendações */
+.avatar-recomendacao { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; display: inline-grid; place-items: center; background: #eaf1ff; color: var(--azul-vivo); font-weight: 700; font-size: 1.1em; }
+.card-recomendacao figcaption { display: flex; align-items: center; gap: 12px; }
+.foto-recomendacao-admin { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.foto-recomendacao-admin form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.foto-recomendacao-admin input[type=file] { padding: 6px; font-size: 0.85em; }
