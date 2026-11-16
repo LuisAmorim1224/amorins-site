@@ -1,7 +1,8 @@
 import FormRecomendacao from '@/components/site/FormRecomendacao'
+import MenuSite from '@/components/site/MenuSite'
 import { assinatura } from '@/lib/recomendacoes'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { EMAIL, linkWhatsapp, TELEFONE, WHATSAPP, YOUTUBE } from '@/lib/contato'
+import { EMAIL, INSTAGRAM, linkWhatsapp, TELEFONE, WHATSAPP, YOUTUBE } from '@/lib/contato'
 import { artigosPublicados } from '@/lib/artigos'
 import { SITE_URL } from '@/lib/site'
 
@@ -9,10 +10,41 @@ import { SITE_URL } from '@/lib/site'
 const FUNDO = 'fundo-grade'
 
 const WHATS_REGULARIZAR = linkWhatsapp('Olá! Quero regularizar meu CNPJ. Pode me ajudar?')
+const WHATS_CONTADOR = linkWhatsapp('Olá! Vim pelo site e quero falar com o contador sobre a minha empresa.')
 const WHATS_PERICIA = linkWhatsapp('Olá! Preciso de um cálculo judicial/trabalhista ou de perícia contábil. Pode me ajudar?')
 
 // A página é refeita a cada 5 minutos (e na hora em que o escritório aprova uma recomendação).
 export const revalidate = 300
+
+// Cards de serviço: cada um tem um botão de WhatsApp com a mensagem já falando daquele serviço.
+const SERVICOS = [
+  {
+    titulo: 'Regularização de CNPJ',
+    principal: true,
+    itens: ['Diagnóstico da situação fiscal', 'Declarações em atraso', 'Parcelamento de débitos', 'Certidão negativa', 'Reativação de CNPJ inapto'],
+    mensagem: 'Olá! Quero regularizar meu CNPJ. Pode me ajudar?',
+  },
+  {
+    titulo: 'Para MEI',
+    itens: ['Abertura e encerramento', 'Inclusão de atividades (CNAE)', 'DAS e declaração anual', 'Controle do limite de faturamento', 'Migração para ME'],
+    mensagem: 'Olá! Sou MEI e preciso de ajuda com a minha empresa.',
+  },
+  {
+    titulo: 'Para empresas',
+    itens: ['Abertura e alterações contratuais', 'Apuração do Simples Nacional', 'Contabilidade e balanços', 'Folha de pagamento', 'Planejamento tributário'],
+    mensagem: 'Olá! Quero um orçamento de contabilidade para a minha empresa.',
+  },
+  {
+    titulo: 'Para pessoa física',
+    itens: ['Declaração de Imposto de Renda', 'Regularização de CPF', 'Parcelamento de dívidas fiscais', 'Planejamento financeiro'],
+    mensagem: 'Olá! Preciso de ajuda com Imposto de Renda / CPF.',
+  },
+  {
+    titulo: 'Cálculos e perícia contábil',
+    itens: ['Cálculos judiciais e liquidação de sentença', 'Atualização monetária e juros de débitos', 'Cálculos trabalhistas: rescisão, horas extras e verbas', 'Perícia contábil judicial e extrajudicial', 'Assistente técnico, laudos e pareceres'],
+    mensagem: 'Olá! Preciso de um cálculo judicial/trabalhista ou de perícia contábil. Pode me ajudar?',
+  },
+]
 
 async function recomendacoesAprovadas() {
   try {
@@ -45,7 +77,7 @@ const DADOS_GOOGLE = {
   address: { '@type': 'PostalAddress', addressLocality: 'Salvador', addressRegion: 'BA', addressCountry: 'BR' },
   founder: { '@type': 'Person', name: 'Luis Amorim', jobTitle: 'Contador, CRC-BA 039792/O-0' },
   foundingDate: '2017',
-  sameAs: ['https://www.instagram.com/amorinscontabil', YOUTUBE],
+  sameAs: [INSTAGRAM, YOUTUBE],
   knowsAbout: ['Regularização de CNPJ', 'MEI', 'Simples Nacional', 'Imposto de Renda', 'Perícia contábil', 'Cálculos trabalhistas'],
 }
 
@@ -56,19 +88,19 @@ export default async function Inicio() {
       <header className="site-topo">
         <div className="conteudo">
           <a href="#" className="marca">
-            <img src="/logo.png" alt="Logo Amorins Contábil" />
+            <img src="/logo-96.png" alt="Logo Amorins Contábil" width={40} height={40} />
             Amorins Contábil
           </a>
-          <nav>
-            <a href="#apresentacao">Apresentação</a>
-            <a href="#regularizacao">Regularização de CNPJ</a>
-            <a href="#servicos">Serviços</a>
-            <a href="#recomendacoes">Recomendações</a>
-            <a href="#historia">Quem sou</a>
-            <a href="/artigos">Artigos</a>
-            <a href="#contato">Contato</a>
-            <a href="/login" className="btn-area">Área do Cliente</a>
-          </nav>
+          <MenuSite
+            links={[
+              { href: '#regularizacao', texto: 'Regularização de CNPJ' },
+              { href: '#servicos', texto: 'Serviços' },
+              ...(recomendacoes.length > 0 ? [{ href: '#recomendacoes', texto: 'Recomendações' }] : []),
+              { href: '#historia', texto: 'Quem sou' },
+              { href: '/artigos', texto: 'Artigos' },
+              { href: '#contato', texto: 'Contato' },
+            ]}
+          />
         </div>
       </header>
 
@@ -77,29 +109,32 @@ export default async function Inicio() {
           <div>
             <span className="selo">Contabilidade digital · Atendimento em todo o Brasil</span>
             <h1>
-              Números em <em>ordem</em>. Decisões com segurança.
+              Contador <em>online</em> para a sua empresa, em todo o Brasil.
             </h1>
             <p className="sub">
-              Acompanhe impostos e faturamento em tempo real. Contabilidade com tecnologia e um contador
-              de verdade cuidando da sua empresa, de qualquer lugar do Brasil.
+              Especialista em regularizar CNPJ: inapto, com dívidas no Simples ou no MEI, declarações
+              atrasadas ou certidão positiva. Também cuido da contabilidade de empresas de todos os portes,
+              com um contador de verdade falando direto com você.
             </p>
             <div className="acoes">
-              <a href="/login" className="botao-primario">Acessar Área do Cliente →</a>
-              <a href={WHATS_REGULARIZAR} className="botao-secundario" target="_blank" rel="noreferrer">
+              <a href={WHATS_CONTADOR} className="botao-whatsapp-grande" target="_blank" rel="noreferrer">
+                Falar com o contador no WhatsApp
+              </a>
+              <a href="#regularizacao" className="botao-secundario">
                 Regularizar meu CNPJ
               </a>
             </div>
+            <p className="ja-cliente">Já é cliente? <a href="/login">Entrar na Área do Cliente →</a></p>
           </div>
           <div className="cartao-area">
-            <img src="/logo.png" alt="" />
-            <h2>Área do Cliente</h2>
+            <h2>Por que a Amorins</h2>
             <ul>
-              <li>Documentos e guias organizados por pasta</li>
-              <li>Pedido de nota fiscal em poucos cliques</li>
-              <li>Prévia do Simples e alerta de limite do MEI</li>
-              <li>Pendências da empresa sempre à vista</li>
+              <li>Contador registrado no CRC-BA cuidando do seu caso</li>
+              <li>Atendimento 100% online, de qualquer lugar do Brasil</li>
+              <li>Custo e prazo combinados antes de começar</li>
+              <li>Área do Cliente com documentos e impostos em tempo real</li>
             </ul>
-            <a href="/login" className="botao-primario">Entrar com meu CNPJ</a>
+            <a href={WHATS_CONTADOR} className="botao-primario" target="_blank" rel="noreferrer">Pedir orçamento</a>
           </div>
         </div>
       </section>
@@ -185,55 +220,17 @@ export default async function Inicio() {
             tributário, além de cálculos e perícia contábil para processos judiciais.
           </p>
           <div className="grid-servicos">
-            <div className="card-servico principal">
-              <h3>Regularização de CNPJ</h3>
-              <ul>
-                <li>Diagnóstico da situação fiscal</li>
-                <li>Declarações em atraso</li>
-                <li>Parcelamento de débitos</li>
-                <li>Certidão negativa</li>
-                <li>Reativação de CNPJ inapto</li>
-              </ul>
-            </div>
-            <div className="card-servico">
-              <h3>Para MEI</h3>
-              <ul>
-                <li>Abertura e encerramento</li>
-                <li>Inclusão de atividades (CNAE)</li>
-                <li>DAS e declaração anual</li>
-                <li>Controle do limite de faturamento</li>
-                <li>Migração para ME</li>
-              </ul>
-            </div>
-            <div className="card-servico">
-              <h3>Para empresas</h3>
-              <ul>
-                <li>Abertura e alterações contratuais</li>
-                <li>Apuração do Simples Nacional</li>
-                <li>Contabilidade e balanços</li>
-                <li>Folha de pagamento</li>
-                <li>Planejamento tributário</li>
-              </ul>
-            </div>
-            <div className="card-servico">
-              <h3>Para pessoa física</h3>
-              <ul>
-                <li>Declaração de Imposto de Renda</li>
-                <li>Regularização de CPF</li>
-                <li>Parcelamento de dívidas fiscais</li>
-                <li>Planejamento financeiro</li>
-              </ul>
-            </div>
-            <div className="card-servico">
-              <h3>Cálculos e perícia contábil</h3>
-              <ul>
-                <li>Cálculos judiciais e liquidação de sentença</li>
-                <li>Atualização monetária e juros de débitos</li>
-                <li>Cálculos trabalhistas: rescisão, horas extras e verbas</li>
-                <li>Perícia contábil judicial e extrajudicial</li>
-                <li>Assistente técnico, laudos e pareceres</li>
-              </ul>
-            </div>
+            {SERVICOS.map((sv) => (
+              <div key={sv.titulo} className={`card-servico${sv.principal ? ' principal' : ''}`}>
+                <h3>{sv.titulo}</h3>
+                <ul>
+                  {sv.itens.map((i) => <li key={i}>{i}</li>)}
+                </ul>
+                <a href={linkWhatsapp(sv.mensagem)} className="link-servico" target="_blank" rel="noreferrer">
+                  Falar sobre isso no WhatsApp →
+                </a>
+              </div>
+            ))}
           </div>
           <div className="faixa-pericia">
             <div>
@@ -253,25 +250,30 @@ export default async function Inicio() {
       <section className="secao" id="recomendacoes">
         <div className="conteudo">
           <p className="rotulo">Recomendações</p>
-          <h2>Já foi atendido? Deixe sua recomendação</h2>
-          <p className="intro">
-            Sua opinião ajuda outros empreendedores a encontrar um contador de confiança. A recomendação
-            aparece aqui depois de revisada.
-          </p>
-          {recomendacoes.length > 0 && (
-            <div className="grid-recomendacoes">
-              {recomendacoes.map((r) => (
-                <figure className="card-recomendacao" key={r.id}>
-                  {r.nota && <span className="estrelas" aria-label={`Nota ${r.nota} de 5`}>{'★'.repeat(r.nota)}{'☆'.repeat(5 - r.nota)}</span>}
-                  <blockquote>{r.texto}</blockquote>
-                  <figcaption>{assinatura(r)}</figcaption>
-                </figure>
-              ))}
-            </div>
+          {recomendacoes.length > 0 ? (
+            <>
+              <h2>O que dizem os clientes</h2>
+              <div className="grid-recomendacoes">
+                {recomendacoes.map((r) => (
+                  <figure className="card-recomendacao" key={r.id}>
+                    {r.nota && <span className="estrelas" aria-label={`Nota ${r.nota} de 5`}>{'★'.repeat(r.nota)}{'☆'.repeat(5 - r.nota)}</span>}
+                    <blockquote>{r.texto}</blockquote>
+                    <figcaption>{assinatura(r)}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </>
+          ) : (
+            <h2>Já é cliente? Conte como foi</h2>
           )}
-          <div className="caixa-recomendacao">
+          <details className="caixa-recomendacao">
+            <summary>Deixar uma recomendação</summary>
+            <p className="intro">
+              Sua opinião ajuda outros empreendedores a encontrar um contador de confiança. A recomendação
+              aparece aqui depois de revisada.
+            </p>
             <FormRecomendacao />
-          </div>
+          </details>
         </div>
       </section>
 
@@ -366,6 +368,7 @@ export default async function Inicio() {
           <div className="contato-grid">
             <a href={linkWhatsapp()} target="_blank" rel="noreferrer"><strong>WhatsApp</strong><span>{TELEFONE}</span></a>
             <a href={`mailto:${EMAIL}`}><strong>E-mail</strong><span>{EMAIL}</span></a>
+            <a href={INSTAGRAM} target="_blank" rel="noreferrer"><strong>Instagram</strong><span>@amorinscontabil</span></a>
             <a href={YOUTUBE} target="_blank" rel="noreferrer"><strong>YouTube</strong><span>Dicas de contabilidade no canal @AmorinsContabil</span></a>
             <a href="/login"><strong>Área do Cliente</strong><span>Já é cliente? Entre com seu CNPJ</span></a>
           </div>
@@ -377,6 +380,7 @@ export default async function Inicio() {
           © {new Date().getFullYear()} Amorins Contábil · CNPJ 29.195.194/0001-00 · Contador responsável:
           Luis Amorim, CRC-BA 039792/O-0
         </p>
+        <p><a href="/privacidade">Política de privacidade</a></p>
       </footer>
 
       <a href={linkWhatsapp()} className="whatsapp-flutuante" target="_blank" rel="noreferrer">

@@ -15,6 +15,7 @@ a { color: var(--azul); }
 .site-topo nav { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .site-topo nav a { color: #d6e2ff; text-decoration: none; font-size: 0.95em; }
 .site-topo nav a:hover { color: #fff; }
+.site-topo .botao-menu { display: none; background: none; border: 1px solid rgba(214, 226, 255, 0.4); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 .site-topo nav a.btn-area { background: var(--azul-vivo); color: #fff; padding: 8px 16px; border-radius: 8px; font-weight: 600; }
 
 .hero { color: #fff; padding: 88px 20px 96px; }
@@ -129,7 +130,15 @@ footer.rodape a { color: #d6e2ff; }
   .hero .conteudo, .destaque-cnpj, .historia { grid-template-columns: 1fr; }
   .historia .perfil { position: static; }
   .faixa-numeros .conteudo { grid-template-columns: repeat(2, 1fr); }
-  .site-topo nav a:not(.btn-area) { display: none; }
+  .site-topo .botao-menu { display: inline-flex; }
+  .site-topo nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; background: var(--azul-escuro); padding: 8px 20px 18px; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3); }
+  .site-topo nav.aberto { display: flex; }
+  .site-topo nav a { padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 1.02em; }
+  .site-topo nav a.btn-area { margin-top: 12px; text-align: center; border-bottom: none; }
+  .hero { padding: 36px 20px 48px; }
+  .hero .selo { display: none; }
+  .hero p.sub { font-size: 1.02em; margin-bottom: 22px; }
+  .hero .acoes a { flex: 1 1 100%; justify-content: center; text-align: center; }
 }
 
 /* Área do cliente e administração */
@@ -278,3 +287,28 @@ button.perigo { background: none; color: #c62828; padding: 0; text-decoration: u
 .artigo ul { padding-left: 22px; display: grid; gap: 8px; margin-bottom: 14px; }
 .chamada-artigo { margin-top: 40px; background: #eaf1ff; border: 1px solid #c9dbff; border-radius: 16px; padding: 22px 24px; display: flex; gap: 18px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .chamada-artigo p { margin: 4px 0 0; color: var(--texto-suave); font-size: 0.95em; }
+
+/* ---------- Melhorias para o visitante ---------- */
+.botao-whatsapp-grande { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 1.02em; background: #25d366; color: #fff; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35); }
+.botao-whatsapp-grande:hover { background: #1fbe5b; }
+.hero .ja-cliente { margin-top: 18px; color: #bcd0ff; font-size: 0.95em; }
+.hero .ja-cliente a { color: #fff; font-weight: 600; }
+.card-servico { display: flex; flex-direction: column; }
+.card-servico ul { flex: 1; align-content: start; }
+.link-servico { margin-top: 16px; font-weight: 600; font-size: 0.92em; color: #1a8f47; text-decoration: none; }
+.link-servico:hover { text-decoration: underline; }
+details.caixa-recomendacao > summary { cursor: pointer; font-weight: 600; color: var(--azul-vivo); list-style: none; }
+details.caixa-recomendacao > summary::before { content: '+ '; }
+details.caixa-recomendacao[open] > summary::before { content: '− '; }
+details.caixa-recomendacao[open] > summary { margin-bottom: 14px; }
+details.caixa-recomendacao .intro { margin-bottom: 18px; }
+footer.rodape p + p { margin-top: 8px; }
+.aviso-cookies { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 30; max-width: 720px; margin: auto; background: #fff; color: var(--texto); border: 1px solid #d6e2f7; border-radius: 14px; box-shadow: 0 12px 32px rgba(7, 26, 61, 0.25); padding: 16px 18px; display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: 0.92em; }
+.aviso-cookies p { flex: 1 1 320px; }
+.aviso-cookies div { display: flex; gap: 8px; }
+.aviso-cookies button { border-radius: 8px; padding: 9px 18px; }
+.aviso-cookies button.recusar { background: #eef2fa; color: var(--texto); }
+.texto-legal { max-width: 760px; margin: auto; }
+.texto-legal h2 { font-size: 1.2em; color: #0b1f4d; margin: 28px 0 8px; }
+.texto-legal p, .texto-legal li { margin-bottom: 10px; color: #2b3550; }
+.texto-legal ul { padding-left: 22px; }

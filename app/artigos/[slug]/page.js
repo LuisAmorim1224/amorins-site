@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { TopoSimples, RodapeSimples } from '@/components/site/TopoSimples'
+import { TopoSimples, RodapeSimples, WhatsappFlutuante } from '@/components/site/TopoSimples'
 import { artigosPublicados, buscarArtigo } from '@/lib/artigos'
 import { linkWhatsapp } from '@/lib/contato'
 import { SITE_URL } from '@/lib/site'
@@ -20,7 +20,13 @@ export async function generateMetadata({ params }) {
     title: `${artigo.titulo} · Amorins Contábil`,
     description: artigo.descricao,
     alternates: { canonical: `/artigos/${artigo.slug}` },
-    openGraph: { type: 'article', title: artigo.titulo, description: artigo.descricao, url: `/artigos/${artigo.slug}` },
+    openGraph: {
+      type: 'article',
+      title: artigo.titulo,
+      description: artigo.descricao,
+      url: `/artigos/${artigo.slug}`,
+      images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
+    },
   }
 }
 
@@ -79,6 +85,7 @@ export default async function Artigo({ params }) {
         </article>
       </main>
       <RodapeSimples />
+      <WhatsappFlutuante mensagem={artigo.whatsapp} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosGoogle) }} />
     </>
   )
