@@ -9,6 +9,7 @@ export default function sitemap() {
   return [
     { url: SITE_URL, changeFrequency: 'weekly', priority: 1 },
     { url: `${SITE_URL}/artigos`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE_URL}/privacidade`, changeFrequency: 'yearly', priority: 0.2 },
     ...artigosPublicados().map((a) => ({
       url: `${SITE_URL}/artigos/${a.slug}`,
       lastModified: a.atualizado || a.data,

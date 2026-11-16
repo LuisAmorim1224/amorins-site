@@ -1,7 +1,8 @@
 import './globals.css'
+import Rastreamento from '@/components/site/Rastreamento'
 import { SITE_URL, NOME_SITE } from '@/lib/site'
 
-const TITULO = 'Amorins Contábil · Contabilidade digital e regularização de CNPJ'
+const TITULO = 'Amorins Contábil · Contador online e regularização de CNPJ em todo o Brasil'
 const DESCRICAO =
   'Contabilidade digital para todo o Brasil: regularização de CNPJ, MEI, Simples Nacional e Imposto de Renda, com Área do Cliente online.'
 
@@ -17,7 +18,6 @@ export const metadata = {
     siteName: NOME_SITE,
     title: TITULO,
     description: DESCRICAO,
-    images: [{ url: '/logo.png', width: 512, height: 512, alt: 'Logo Amorins Contábil' }],
   },
   // Código de verificação do Google Search Console (conta amorinscontabil). Não remover.
   verification: { google: 'AjPL5QaMtwNFIx-BgpSXAXx1Q_ECWdmSsGuSjrV5JK8' },
@@ -26,7 +26,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Rastreamento />
+      </body>
     </html>
   )
 }
