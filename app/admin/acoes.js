@@ -13,6 +13,7 @@ import { nomeSeguro, PASTA } from '@/lib/documentos'
 import { fichaParaBanco, REGIMES, tipoDocumento } from '@/lib/ficha'
 import { cnpjDoEmailDeLogin, emailDeLogin, erroNaNovaSenha, senhaInicial } from '@/lib/login'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { caminhoDaFoto, PASTA_FOTOS, validarFoto } from '@/lib/recomendacoes'
 import { DIA_VENCIMENTO, hojeNaBahia } from '@/lib/vencimento'
 import { atualizarNotasDeTodos, conferirCodigosNoMunicipio, emitirPedido, importarNotasAnteriores, salvarCertificado, sugerirServicoDoPedido } from '@/lib/nfse'
 import { criarPedido } from '@/lib/pedidos'
@@ -684,7 +685,53 @@ export async function aprovarRecomendacao(formData) {
 
 export async function excluirRecomendacao(formData) {
   await exigirAdmin()
-  await createAdminClient().from('recomendacoes').delete().eq('id', formData.get('id'))
+  const supabase = createAdminClient()
+  const { data } = await supabase.from('recomendacoes').select('*').eq('id', formData.get('id')).maybeSingle()
+  const antiga = caminhoDaFoto(data?.foto)
+  if (antiga) await supabase.storage.from(PASTA_FOTOS).remove([antiga])
+  await supabase.from('recomendacoes').delete().eq('id', formData.get('id'))
+  revalidatePath('/admin')
+  revalidatePath('/')
+}
+
+// Foto do cliente na recomendação: o Luis salva do WhatsApp e sobe aqui.
+export async function salvarFotoRecomendacao(_estado, formData) {
+  await exigirAdmin()
+  const id = String(formData.get('id') || '')
+  const arquivo = formData.get('foto')
+  const { erro, extensao } = validarFoto(arquivo)
+  if (erro) return { erro }
+  const supabase = createAdminClient()
+  const { data: atual, error: erroBusca } = await supabase.from('recomendacoes').select('*').eq('id', id).maybeSingle()
+  if (erroBusca || !atual) return { erro: 'Recomendação não encontrada.' }
+  const caminho = `${id}/${Date.now()}.${extensao}`
+  const { error: erroEnvio } = await supabase.storage
+    .from(PASTA_FOTOS)
+    .upload(caminho, Buffer.from(await arquivo.arrayBuffer()), { contentType: arquivo.type, upsert: true })
+  if (erroEnvio) {
+    console.error('Erro ao subir foto da recomendação:', erroEnvio)
+    return { erro: 'Não foi possível salvar a foto. Rode supabase/009_fotos_recomendacoes.sql e tente de novo.' }
+  }
+  const url = supabase.storage.from(PASTA_FOTOS).getPublicUrl(caminho).data.publicUrl
+  const { error: erroGravar } = await supabase.from('recomendacoes').update({ foto: url }).eq('id', id)
+  if (erroGravar) {
+    await supabase.storage.from(PASTA_FOTOS).remove([caminho])
+    return { erro: 'Não foi possível salvar a foto. Rode supabase/009_fotos_recomendacoes.sql e tente de novo.' }
+  }
+  const antiga = caminhoDaFoto(atual.foto)
+  if (antiga) await supabase.storage.from(PASTA_FOTOS).remove([antiga])
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { ok: 'Foto salva.' }
+}
+
+export async function removerFotoRecomendacao(formData) {
+  await exigirAdmin()
+  const supabase = createAdminClient()
+  const { data } = await supabase.from('recomendacoes').select('*').eq('id', formData.get('id')).maybeSingle()
+  const antiga = caminhoDaFoto(data?.foto)
+  if (antiga) await supabase.storage.from(PASTA_FOTOS).remove([antiga])
+  await supabase.from('recomendacoes').update({ foto: null }).eq('id', formData.get('id'))
   revalidatePath('/admin')
   revalidatePath('/')
 }

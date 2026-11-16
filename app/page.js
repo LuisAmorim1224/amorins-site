@@ -1,6 +1,6 @@
 import FormRecomendacao from '@/components/site/FormRecomendacao'
 import MenuSite from '@/components/site/MenuSite'
-import { assinatura } from '@/lib/recomendacoes'
+import { assinatura, inicial } from '@/lib/recomendacoes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EMAIL, INSTAGRAM, linkWhatsapp, TELEFONE, WHATSAPP, YOUTUBE } from '@/lib/contato'
 import { artigosPublicados } from '@/lib/artigos'
@@ -50,12 +50,13 @@ async function recomendacoesAprovadas() {
   try {
     const { data, error } = await createAdminClient()
       .from('recomendacoes')
-      .select('id, nome, empresa, cidade, texto, nota')
+      .select('*')
       .eq('aprovado', true)
       .order('criado_em', { ascending: false })
       .limit(9)
     if (error) throw error
-    return data || []
+    // Só os campos públicos (o contato do cliente nunca vai para a página).
+    return (data || []).map(({ id, nome, empresa, cidade, texto, nota, foto }) => ({ id, nome, empresa, cidade, texto, nota, foto }))
   } catch (erro) {
     // Sem banco (ex.: no build) ou tabela ainda não criada: a seção mostra só o formulário.
     console.error('Recomendações indisponíveis:', erro?.message || erro)
@@ -258,7 +259,10 @@ export default async function Inicio() {
                   <figure className="card-recomendacao" key={r.id}>
                     {r.nota && <span className="estrelas" aria-label={`Nota ${r.nota} de 5`}>{'★'.repeat(r.nota)}{'☆'.repeat(5 - r.nota)}</span>}
                     <blockquote>{r.texto}</blockquote>
-                    <figcaption>{assinatura(r)}</figcaption>
+                    <figcaption>
+                      {r.foto ? <img src={r.foto} alt="" className="avatar-recomendacao" /> : <span className="avatar-recomendacao">{inicial(r.nome)}</span>}
+                      {assinatura(r)}
+                    </figcaption>
                   </figure>
                 ))}
               </div>

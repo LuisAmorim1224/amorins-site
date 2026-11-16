@@ -11,6 +11,7 @@ import AcoesPedido from './AcoesPedido'
 import NovoCliente from './NovoCliente'
 import AtualizarNotas from './AtualizarNotas'
 import { aprovarRecomendacao, excluirRecomendacao } from './acoes'
+import FotoRecomendacao from './FotoRecomendacao'
 import { assinatura } from '@/lib/recomendacoes'
 
 export const metadata = { title: 'Administração · Amorins Contábil' }
@@ -76,6 +77,7 @@ export default async function Admin() {
                       {new Date(r.criado_em).toLocaleDateString('pt-BR')}
                       {r.contato ? ` · contato: ${r.contato}` : ''} · {r.aprovado ? 'publicada no site' : 'aguardando aprovação'}
                     </div>
+                    <FotoRecomendacao id={r.id} nome={r.nome} foto={r.foto} />
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {!r.aprovado && (
