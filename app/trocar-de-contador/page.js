@@ -23,6 +23,7 @@ const DORES = [
   { titulo: 'Você não entende o que paga', texto: 'Guias chegam sem explicação. Aqui você recebe tudo organizado e explicado, na Área do Cliente.' },
   { titulo: 'Paga imposto demais', texto: 'Ninguém revisou o seu regime. Aqui a gente analisa se dá para pagar menos, dentro da lei.' },
   { titulo: 'Só lembra de você na hora de cobrar', texto: 'Aqui você tem acompanhamento todo mês e sabe o valor antes de fechar.' },
+  { titulo: 'Deixou a empresa com pendências ou parada', texto: 'Eu assumo a contabilidade, vejo tudo o que ficou para trás e coloco a sua empresa em ordem.' },
 ]
 
 const PASSOS = [
