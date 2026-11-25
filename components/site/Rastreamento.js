@@ -45,7 +45,19 @@ function iniciarMedicao() {
   document.addEventListener('click', (e) => {
     const link = e.target.closest?.('a')
     if (!link || !linkDeWhatsapp(link.href)) return
+    // "Lead" é o evento que as campanhas de conversão da Meta otimizam. O mesmo eventID vai para
+    // o Pixel e para a API de Conversões (pelo servidor), e a Meta junta os dois.
+    const eventId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
     window.fbq?.('track', 'Contact')
+    window.fbq?.('track', 'Lead', { content_name: location.pathname }, { eventID: eventId })
+    try {
+      fetch('/api/meta-evento', {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evento: 'Lead', eventId, url: location.href.split('?')[0] }),
+      }).catch(() => {})
+    } catch {}
     window.gtag?.('event', 'generate_lead', { metodo: 'whatsapp', pagina: location.pathname })
     if (RASTREIO.googleAdsConversaoWhatsapp) {
       window.gtag?.('event', 'conversion', { send_to: RASTREIO.googleAdsConversaoWhatsapp })
